@@ -15,6 +15,10 @@ public class EnemyControll : MonoBehaviour
     private float lastAttackTime;
     private float pathUpdateInterval = 0.5f;
     private float lastPathUpdateTime;
+    private float strafeDirection = 1f; // 회피 기동 방향
+    private float strafeDistance = 3f; // 회피 기동 거리
+    private float strafeChangeInterval = 2f; // 회피 방향 변경 간격
+    private float lastStrafeChangeTime; // 마지막 회피 방향 변경 시간
 
     [SerializeField] private Transform shotPivot;
     [SerializeField] private Transform shotPoint;
@@ -92,6 +96,13 @@ public class EnemyControll : MonoBehaviour
             lastPathUpdateTime = Time.time;
         }
 
+        // 회피 방향 변경 체크
+        if (Time.time - lastStrafeChangeTime >= strafeChangeInterval)
+        {
+            strafeDirection *= -1f; // 방향 반전
+            lastStrafeChangeTime = Time.time;
+        }
+
         // 목표와의 거리 체크
         float distanceToTarget = Vector3.Distance(transform.position, target.transform.position);
         
@@ -136,7 +147,27 @@ public class EnemyControll : MonoBehaviour
         if (target != null && !isFindingPosition)
         {
             lastKnownTargetPosition = target.transform.position;
-            navAgent.SetDestination(lastKnownTargetPosition);
+            
+            // 타겟을 향한 방향 벡터
+            Vector3 directionToTarget = (target.transform.position - transform.position).normalized;
+            
+            // 회피 기동을 위한 수직 방향 벡터 (2D에서는 z축을 기준으로 회전)
+            Vector3 perpendicularDirection = new Vector3(-directionToTarget.y, directionToTarget.x, 0);
+            
+            // 회피 기동 위치 계산
+            Vector3 strafePosition = target.transform.position + perpendicularDirection * strafeDistance * strafeDirection;
+            
+            // NavMesh 위의 유효한 위치 찾기
+            NavMeshHit hit;
+            if (NavMesh.SamplePosition(strafePosition, out hit, strafeDistance, NavMesh.AllAreas))
+            {
+                navAgent.SetDestination(hit.position);
+            }
+            else
+            {
+                // 유효한 위치를 찾지 못한 경우 타겟 위치로 이동
+                navAgent.SetDestination(lastKnownTargetPosition);
+            }
         }
     }
 
