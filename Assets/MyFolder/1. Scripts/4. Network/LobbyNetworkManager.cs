@@ -9,20 +9,24 @@ public class LobbyNetworkManager : MonoBehaviour
 {
     [SerializeField] private NetworkManager networkManager;
     [SerializeField] private string readyScene = "Ready";
+    public string CurrentRoomId { get; private set; }
 
     public void StartHost()
     {
         if (networkManager == null)
             networkManager = InstanceFinder.NetworkManager;
+        RoomInfo room = RoomManager.Instance.CreateRoom();
+        CurrentRoomId = room.RoomId;
         networkManager.ServerManager.StartConnection();
         networkManager.ClientManager.StartConnection();
     }
 
-    public void JoinHost()
+    public void JoinHost(string roomId)
     {
         if (networkManager == null)
             networkManager = InstanceFinder.NetworkManager;
-        networkManager.ClientManager.StartConnection();
+        if (RoomManager.Instance.JoinRoom(roomId))
+            networkManager.ClientManager.StartConnection();
     }
 
     private void OnEnable()

@@ -7,6 +7,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4}
   - component: {fileID: 11400000}
+  - component: {fileID: 11400001}
 --- !u!4 &4
 Transform:
   m_GameObject: {fileID: 1}
@@ -21,6 +22,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ec8f1b3db5b0442189ed16d3f6da3f77, type: 3}
   networkManager: {fileID: 0}
   readyScene: Ready
+--- !u!114 &11400001
+MonoBehaviour:
+  m_GameObject: {fileID: 1}
+  m_Enabled: 1
+  m_Script: {fileID: 11500000, guid: 61f463c023fd46bba3e2230b81a92e75, type: 3}
+  lobbyNetworkManager: {fileID: 11400000}
+  roomListPanel: {fileID: 0}
+  roomContent: {fileID: 0}
+  hostRoomIdText: {fileID: 0}
 --- !u!1026 &1026
 SceneRoots:
   m_Roots:
