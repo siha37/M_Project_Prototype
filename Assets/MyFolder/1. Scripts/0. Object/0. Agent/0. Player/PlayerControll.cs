@@ -10,9 +10,11 @@ public class PlayerControll : MonoBehaviour
     private AgentUI agentUI;
 
     private float lookAngle;
+    public float LookAngle => lookAngle;
     public Transform shotPivot;
     public Transform shotPoint;
     public GameObject bulletPrefab;
+    public Camera mainCamera;
 
     private bool canShoot = true;
     private bool isReloading = false;
@@ -49,7 +51,7 @@ public class PlayerControll : MonoBehaviour
         switch (playerInputControll.controllerType)
         {
             case PlayerInputControll.ControllerType.Keyboard:
-                Vector2 worldMousePos = Camera.main.ScreenToWorldPoint(position);
+                Vector2 worldMousePos = mainCamera.ScreenToWorldPoint(position - new Vector2(960,0));
                 targetVector = worldMousePos - (Vector2)transform.position;
                 break;
             case PlayerInputControll.ControllerType.Gamepad:

@@ -641,17 +641,6 @@
                 },
                 {
                     "name": "",
-                    "id": "cb1c1cd6-506a-4053-bccb-7e9a030399db",
-                    "path": "<Keyboard>/e",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "Keyboard&Mouse",
-                    "action": "Interact",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "7284c228-7848-495c-9488-fba2a2059ace",
                     "path": "<Gamepad>/buttonNorth",
                     "interactions": "",

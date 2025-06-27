@@ -13,6 +13,9 @@ public class AgentUI : MonoBehaviour
     [Header("재장전")]
     [SerializeField] private Image reloadBar;
 
+    [Header("부활")]
+    [SerializeField] private Image reviveBar;
+
     [Header("탄창")]
     [SerializeField] private TextMeshProUGUI ammoText;
 
@@ -26,6 +29,9 @@ public class AgentUI : MonoBehaviour
             
         if (secondaryHealthBar != null)
             secondaryHealthBar.fillAmount = 1f;
+
+        if (reviveBar != null)
+            reviveBar.fillAmount = 0f;
     }
 
     private void Update()
@@ -62,6 +68,24 @@ public class AgentUI : MonoBehaviour
     {            
         if (reloadBar != null)
             reloadBar.fillAmount = 0f;
+    }
+
+    public void StartReviveUI()
+    {
+        if (reviveBar != null)
+            reviveBar.fillAmount = 0f;
+    }
+
+    public void UpdateReviveProgress(float progress)
+    {
+        if (reviveBar != null)
+            reviveBar.fillAmount = Mathf.Clamp01(progress);
+    }
+
+    public void EndReviveUI()
+    {
+        if (reviveBar != null)
+            reviveBar.fillAmount = 0f;
     }
 
     public void UpdateAmmoUI(int currentAmmo, int maxAmmo)

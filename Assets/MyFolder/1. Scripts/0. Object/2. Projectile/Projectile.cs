@@ -37,7 +37,9 @@ public class Projectile : MonoBehaviour
                 State targetState = collision.GetComponent<State>();
                 if (targetState != null)
                 {
-                    targetState.TakeDamage(damage);
+                    // 총알의 이동 방향을 hitDirection으로 전달
+                    Vector2 hitDirection = rb.linearVelocity.normalized;
+                    targetState.TakeDamage(damage, hitDirection);
                 }
                 Destroy(gameObject);
                 break;

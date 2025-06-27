@@ -62,9 +62,9 @@ public class EnemyControll : MonoBehaviour
         obstacleLayer = (1 << LayerMask.NameToLayer("Wall")) | (1 << LayerMask.NameToLayer("Agent"));
     }
 
-    public void Init(GameObject target)
+    public void Init(GameObject target,Vector2 startPos)
     {
-        if (target == null)
+        if (!target)
         {
             Debug.LogError($"[{gameObject.name}] 초기화할 타겟이 없습니다.");
             return;
@@ -74,6 +74,7 @@ public class EnemyControll : MonoBehaviour
         lastKnownTargetPosition = target.transform.position;
 
         // NavMeshAgent 초기 설정
+        navAgent.destination = startPos;
         navAgent.speed = AgentState.speed;
         navAgent.stoppingDistance = EnemyState.targetDistance;
         navAgent.updateRotation = false; // 회전은 직접 제어
@@ -83,7 +84,7 @@ public class EnemyControll : MonoBehaviour
 
     private void Update()
     {
-        if (target == null)
+        if (!target)
         {
             Debug.LogWarning($"[{gameObject.name}] 타겟이 없습니다.");
             return;
@@ -181,6 +182,13 @@ public class EnemyControll : MonoBehaviour
 
         while (attempts < maxAttempts)
         {
+            // NavMeshAgent가 비활성화되어 있다면 코루틴 종료
+            if (!navAgent.enabled)
+            {
+                isFindingPosition = false;
+                yield break;
+            }
+
             for (float angle = -searchAngle; angle <= searchAngle; angle += 10f)
             {
                 Vector3 direction = Quaternion.Euler(0, 0, angle) * (target.transform.position - transform.position).normalized;
@@ -227,12 +235,26 @@ public class EnemyControll : MonoBehaviour
             // 가장 좋은 위치로 이동
             if (bestPosition != transform.position)
             {
+                // NavMeshAgent가 비활성화되어 있다면 코루틴 종료
+                if (!navAgent.enabled)
+                {
+                    isFindingPosition = false;
+                    yield break;
+                }
+
                 navAgent.SetDestination(bestPosition);
                 float moveTimeout = 5f; // 이동 타임아웃
                 float startTime = Time.time;
 
                 while (Vector3.Distance(transform.position, bestPosition) > 0.5f)
                 {
+                    // NavMeshAgent가 비활성화되어 있다면 코루틴 종료
+                    if (!navAgent.enabled)
+                    {
+                        isFindingPosition = false;
+                        yield break;
+                    }
+
                     if (Time.time - startTime > moveTimeout)
                     {
                         Debug.LogWarning($"[{gameObject.name}] 위치 이동 타임아웃");

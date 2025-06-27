@@ -30,6 +30,9 @@ public class PlayerInputControll : MonoBehaviour
     public InputActionVector2CallBack lookPerformedCallback;
     public InputActionCallBack attackCallback;
     public InputActionCallBack reloadCallback;
+    public InputActionCallBack interactStartCallback;
+    public InputActionCallBack interactPerformedCallback;
+    public InputActionCallBack interactCanceledCallback;
 
     private void Start()
     {
@@ -61,6 +64,19 @@ public class PlayerInputControll : MonoBehaviour
         interact.performed += InteractPerformed;
         interact.canceled += InteractCanceled;
         reload.started += ReloadStart;
+    }
+
+    private void OnEnable()
+    {
+        if(playerinput != null)
+        {
+            playerinput.enabled = true;
+        }
+    }
+
+    private void OnDisable()
+    {
+        playerinput.enabled = false;
     }
 
     private bool isAttacking = false;
@@ -101,17 +117,19 @@ public class PlayerInputControll : MonoBehaviour
 
     private void InteractStart(InputAction.CallbackContext context)
     {
+        interactStartCallback?.Invoke();
     }
     private void InteractPerformed(InputAction.CallbackContext context)
     {
+        interactPerformedCallback?.Invoke();
     }
     private void InteractCanceled(InputAction.CallbackContext context)
     {
+        interactCanceledCallback?.Invoke();
     }
 
     private void ReloadStart(InputAction.CallbackContext context)
     {
         reloadCallback?.Invoke();
     }
-
 }

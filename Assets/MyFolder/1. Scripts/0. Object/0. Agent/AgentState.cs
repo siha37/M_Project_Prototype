@@ -4,7 +4,7 @@ public class AgentState : State
 {
     public const float speed = 5f;
     public const float bulletSpeed = 10f;
-    public const float bulletDamage = 10f;
+    public const float bulletDamage = 45f;
     public const float bulletDelay = 0.3f;
     public const float bulletRange = 10f;
     public const float bulletReloadTime = 2f;
@@ -26,9 +26,9 @@ public class AgentState : State
         }
     }
 
-    public override void TakeDamage(float damage)
+    public override void TakeDamage(float damage, Vector2 hitDirection = default)
     {
-        base.TakeDamage(damage);
+        base.TakeDamage(damage, hitDirection);
         
         // 체력 UI 업데이트
         if (agentUI != null)
@@ -40,9 +40,9 @@ public class AgentState : State
     public void UpdateBulletCount(float count)
     {
         bulletCurrentCount += count;
-        
+        bulletCurrentCount = Mathf.Clamp(bulletCurrentCount, 0, bulletMaxCount);
         // 탄약 UI 업데이트
-        if (agentUI != null)
+        if (agentUI)
         {
             agentUI.UpdateAmmoUI((int)bulletCurrentCount, (int)bulletMaxCount);
         }
