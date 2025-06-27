@@ -323,6 +323,17 @@ public class EnemyControll : MonoBehaviour
             state.UpdateBulletCount(-1);
             lastAttackTime = Time.time;
 
+            // 네트워크 동기화를 위한 슈팅 이벤트 호출
+            var enemyNetwork = GetComponent<MonoBehaviour>();
+            if (enemyNetwork != null && enemyNetwork.GetType().Name == "EnemyNetwork")
+            {
+                var onShootMethod = enemyNetwork.GetType().GetMethod("OnShoot");
+                if (onShootMethod != null)
+                {
+                    onShootMethod.Invoke(enemyNetwork, new object[] { shotPoint.position, shotPoint.rotation });
+                }
+            }
+
             if (state.bulletCurrentCount <= 0)
             {
                 StartCoroutine(Reload());
