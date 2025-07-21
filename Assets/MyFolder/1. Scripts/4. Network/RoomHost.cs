@@ -22,14 +22,15 @@ public class RoomHost
                 maxPlayers = maxPlayers,
                 roomName = roomName,
                 gameType = ServerConfig.DEFAULT_GAME_TYPE,
-                isPrivate = false,
-                deviceId = DeviceIdentifier.GetDeviceId()
+                isPrivate = false
             };
 
-            var response = await TcpClientHelper.SendJsonAsync<ApiResponse>(
-                ServerConfig.SERVER_IP, 
-                ServerConfig.SERVER_PORT, 
-                payload
+            var response = await TcpClientHelper.SendAuthedJsonAsync<ApiResponse>(
+                ServerConfig.SERVER_IP,
+                ServerConfig.SERVER_PORT,
+                payload,
+                DeviceIdentifier.GetDeviceId(),
+                TCPNetworkManager.Instance.GetSessionToken()
             );
             
             if (!response.success)
@@ -45,19 +46,14 @@ public class RoomHost
                 {
                     Debug.Log($"서버 응답 데이터 타입: {response.data.GetType()}");
                     Debug.Log($"서버 응답 데이터: {JsonConvert.SerializeObject(response.data)}");
-                    
+
                     var outer = JsonConvert.DeserializeObject<Dictionary<string, object>>(response.data.ToString());
-                    if (outer != null && outer.ContainsKey("data"))
+                    if (outer != null && outer.ContainsKey("roomId") && outer.ContainsKey("sessionToken"))
                     {
-                        var inner = JsonConvert.DeserializeObject<Dictionary<string, object>>(outer["data"].ToString());
-                        //var inner = outer["data"] as Dictionary<string, object>;
-                        if (inner != null && inner.ContainsKey("roomId") && inner.ContainsKey("sessionToken"))
-                        {
-                            roomId = inner["roomId"].ToString();
-                            sessionToken = inner["sessionToken"].ToString();
-                            Debug.Log($"방 생성 성공! Room ID: {roomId}, SessionToken: {sessionToken}");
-                            return true;
-                        }
+                        roomId = outer["roomId"].ToString();
+                        sessionToken = outer["sessionToken"].ToString();
+                        Debug.Log($"방 생성 성공! Room ID: {roomId}, SessionToken: {sessionToken}");
+                        return true;
                     }
                     Debug.LogError("방 생성 응답에 roomId 또는 sessionToken이 없음");
                     return false;
@@ -92,6 +88,22 @@ public class RoomHost
         }
     }
     
+    public async Task<bool> CreateRoomWithRetryAsync(string roomName, int maxPlayers = ServerConfig.DEFAULT_MAX_PLAYERS, int maxRetry = 3)
+    {
+        int retryCount = 0;
+        while (retryCount < maxRetry)
+        {
+            bool result = await CreateRoomAsync(roomName, maxPlayers);
+            if (result)
+                return true;
+            retryCount++;
+            Debug.LogWarning($"방 생성 재시도 {retryCount}/{maxRetry}");
+            await Task.Delay(500); // 0.5초 대기 후 재시도
+        }
+        Debug.LogError("방 생성이 반복적으로 실패했습니다.");
+        return false;
+    }
+    
     public async Task<bool> DeleteRoomAsync(string roomId)
     {
         try
@@ -103,10 +115,12 @@ public class RoomHost
                 sessionToken = sessionToken
             };
 
-            var response = await TcpClientHelper.SendJsonAsync<ApiResponse>(
-                ServerConfig.SERVER_IP, 
-                ServerConfig.SERVER_PORT, 
-                payload
+            var response = await TcpClientHelper.SendAuthedJsonAsync<ApiResponse>(
+                ServerConfig.SERVER_IP,
+                ServerConfig.SERVER_PORT,
+                payload,
+                DeviceIdentifier.GetDeviceId(),
+                TCPNetworkManager.Instance.GetSessionToken()
             );
             
             if (!response.success)
@@ -144,10 +158,12 @@ public class RoomHost
                 playerCount = playerCount
             };
 
-            var response = await TcpClientHelper.SendJsonAsync<ApiResponse>(
-                ServerConfig.SERVER_IP, 
-                ServerConfig.SERVER_PORT, 
-                payload
+            var response = await TcpClientHelper.SendAuthedJsonAsync<ApiResponse>(
+                ServerConfig.SERVER_IP,
+                ServerConfig.SERVER_PORT,
+                payload,
+                DeviceIdentifier.GetDeviceId(),
+                TCPNetworkManager.Instance.GetSessionToken()
             );
             
             if (!response.success)

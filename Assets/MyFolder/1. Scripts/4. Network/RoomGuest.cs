@@ -34,10 +34,12 @@ public class RoomGuest
                 includePrivate = includePrivate
             };
 
-            var response = await TcpClientHelper.SendJsonAsync<ApiResponse>(
-                ServerConfig.SERVER_IP, 
-                ServerConfig.SERVER_PORT, 
-                payload
+            var response = await TcpClientHelper.SendAuthedJsonAsync<ApiResponse>(
+                ServerConfig.SERVER_IP,
+                ServerConfig.SERVER_PORT,
+                payload,
+                DeviceIdentifier.GetDeviceId(),
+                TCPNetworkManager.Instance.GetSessionToken()
             );
             
             if (!response.success)
@@ -53,37 +55,17 @@ public class RoomGuest
                     Debug.Log($"서버 응답 데이터 타입: {response.data.GetType()}");
                     Debug.Log($"서버 응답 데이터: {JsonConvert.SerializeObject(response.data)}");
 
-                    // 1차 파싱: data
+                    // rooms 필드만 추출
                     var outer = JsonConvert.DeserializeObject<Dictionary<string, object>>(response.data.ToString());
-                    if (outer != null && outer.ContainsKey("data"))
+                    if (outer != null && outer.ContainsKey("rooms"))
                     {
-                        // 2차 파싱: data.data
-                        var inner = JsonConvert.DeserializeObject<Dictionary<string, object>>(outer["data"].ToString());
-                        if (inner != null && inner.ContainsKey("rooms"))
-                        {
-                            var roomsData = JsonConvert.DeserializeObject<Dictionary<string, RoomInfo>>(inner["rooms"].ToString());
-                            var roomList = new List<RoomInfo>();
-
-                            if (roomsData != null)
-                            {
-                                foreach (var room in roomsData.Values)
-                                {
-                                    roomList.Add(room);
-                                }
-                            }
-
-                            Debug.Log($"방 리스트 조회 성공! 방 개수: {roomList.Count}");
-                            return roomList;
-                        }
-                        else
-                        {
-                            Debug.LogError("방 리스트 응답에 rooms 필드가 없음");
-                            return new List<RoomInfo>();
-                        }
+                        var roomsJson = outer["rooms"].ToString();
+                        var roomList = JsonConvert.DeserializeObject<List<RoomInfo>>(roomsJson);
+                        return roomList;
                     }
                     else
                     {
-                        Debug.LogError("방 리스트 응답에 data 필드가 없음");
+                        Debug.LogError("방 리스트 응답에 rooms 필드가 없음");
                         return new List<RoomInfo>();
                     }
                 }
@@ -126,10 +108,12 @@ public class RoomGuest
                 deviceId = DeviceIdentifier.GetDeviceId()
             };
 
-            var response = await TcpClientHelper.SendJsonAsync<ApiResponse>(
+            var response = await TcpClientHelper.SendAuthedJsonAsync<ApiResponse>(
                 ServerConfig.SERVER_IP, 
                 ServerConfig.SERVER_PORT, 
-                payload
+                payload,
+                DeviceIdentifier.GetDeviceId(),
+                TCPNetworkManager.Instance.GetSessionToken()
             );
             
             if (!response.success)
@@ -146,14 +130,10 @@ public class RoomGuest
             {
                 try
                 {
-                    // 첫 번째 data 파싱
-                    var firstData = JsonConvert.DeserializeObject<ApiResponse>(response.data.ToString());
-                    
-                    // 두 번째 data에서 실제 방 정보 파싱
-                    if (firstData.data != null)
+                    // 서버 응답의 data를 바로 JoinRoomData로 파싱
+                    var joinData = JsonConvert.DeserializeObject<JoinRoomData>(response.data.ToString());
+                    if (joinData != null)
                     {
-                        var joinData = JsonConvert.DeserializeObject<JoinRoomData>(firstData.data.ToString());
-                        
                         return new JoinRoomResult
                         {
                             success = true,
@@ -164,7 +144,7 @@ public class RoomGuest
                     }
                     else
                     {
-                        Debug.LogError("서버 응답의 data.data가 null입니다");
+                        Debug.LogError("서버 응답의 data 파싱 실패");
                         return new JoinRoomResult 
                         { 
                             success = false, 
@@ -209,10 +189,12 @@ public class RoomGuest
                 deviceId = DeviceIdentifier.GetDeviceId()
             };
 
-            var response = await TcpClientHelper.SendJsonAsync<ApiResponse>(
+            var response = await TcpClientHelper.SendAuthedJsonAsync<ApiResponse>(
                 ServerConfig.SERVER_IP, 
                 ServerConfig.SERVER_PORT, 
-                payload
+                payload,
+                DeviceIdentifier.GetDeviceId(),
+                TCPNetworkManager.Instance.GetSessionToken()
             );
             
             if (!response.success)
@@ -247,10 +229,12 @@ public class RoomGuest
                 deviceId = DeviceIdentifier.GetDeviceId()
             };
 
-            var response = await TcpClientHelper.SendJsonAsync<ApiResponse>(
+            var response = await TcpClientHelper.SendAuthedJsonAsync<ApiResponse>(
                 ServerConfig.SERVER_IP, 
                 ServerConfig.SERVER_PORT, 
-                payload
+                payload,
+                DeviceIdentifier.GetDeviceId(),
+                TCPNetworkManager.Instance.GetSessionToken()
             );
             
             if (!response.success)

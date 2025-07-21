@@ -1,7 +1,8 @@
 using UnityEngine;
 using System.Collections;
+using FishNet.Object;
 
-public class PlayerControll : MonoBehaviour
+public class PlayerControll : NetworkBehaviour
 {
     PlayerInputControll playerInputControll;
     PlayerState state;
@@ -18,20 +19,27 @@ public class PlayerControll : MonoBehaviour
 
     private bool canShoot = true;
     private bool isReloading = false;
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    public override void OnStartClient()
     {
         playerInputControll = GetComponent<PlayerInputControll>();
         state = GetComponent<PlayerState>();
         agentUI = GetComponent<AgentUI>();
         tf = transform;
         rd2D = GetComponent<Rigidbody2D>();
-        playerInputControll.movePerformedCallback += Move;
-        playerInputControll.moveStopCallback += MoveStop;
-        playerInputControll.lookPerformedCallback += Look;
-        playerInputControll.attackCallback += AttackTrigger;
-        playerInputControll.reloadCallback += ReloadTrigger;
+
+        if(!IsOwner){
+            playerInputControll.enabled = false;
+            agentUI.enabled = false;
+        }
+        else
+        {
+            playerInputControll.movePerformedCallback += Move;
+            playerInputControll.moveStopCallback += MoveStop;
+            playerInputControll.lookPerformedCallback += Look;
+            playerInputControll.attackCallback += AttackTrigger;
+            playerInputControll.reloadCallback += ReloadTrigger;
+            mainCamera = Camera.main;
+        }
     }
 
     void Move(Vector2 direction)
@@ -45,29 +53,33 @@ public class PlayerControll : MonoBehaviour
 
     void Look(Vector2 position)
     {
-        //Debug.Log("Look Position: " + position);    
-        Vector2 targetVector = Vector2.zero;
-        Vector2 pivotVector = Vector2.zero;
-        switch (playerInputControll.controllerType)
+        if (IsOwner)
         {
-            case PlayerInputControll.ControllerType.Keyboard:
-                Vector2 worldMousePos = mainCamera.ScreenToWorldPoint(position - new Vector2(960,0));
-                targetVector = worldMousePos - (Vector2)transform.position;
-                break;
-            case PlayerInputControll.ControllerType.Gamepad:
-                if (position.sqrMagnitude > 0.001f)
-                {
-                    targetVector = position.normalized;
-                }
-                else
-                {
-                    return;
-                }
-                break;
-        }
+            //Debug.Log("Look Position: " + position);    
+            Vector2 targetVector = Vector2.zero;
+            Vector2 pivotVector = Vector2.zero;
+            switch (playerInputControll.controllerType)
+            {
+                case PlayerInputControll.ControllerType.Keyboard:
+                    Vector2 worldMousePos = mainCamera.ScreenToWorldPoint(position - new Vector2(960, 0));
+                    targetVector = worldMousePos - (Vector2)transform.position;
+                    break;
+                case PlayerInputControll.ControllerType.Gamepad:
+                    if (position.sqrMagnitude > 0.001f)
+                    {
+                        targetVector = position.normalized;
+                    }
+                    else
+                    {
+                        return;
+                    }
 
-        lookAngle = Mathf.Atan2(targetVector.y, targetVector.x) * Mathf.Rad2Deg;
-        shotPivot.rotation = Quaternion.Euler(new Vector3(0, 0, lookAngle));
+                    break;
+            }
+
+            lookAngle = Mathf.Atan2(targetVector.y, targetVector.x) * Mathf.Rad2Deg;
+            shotPivot.rotation = Quaternion.Euler(new Vector3(0, 0, lookAngle));
+        }
     }
 
     private void AttackTrigger()

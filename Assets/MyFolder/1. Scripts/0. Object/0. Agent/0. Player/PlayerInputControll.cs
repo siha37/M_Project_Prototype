@@ -1,8 +1,9 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections;
+using FishNet.Object;
 
-public class PlayerInputControll : MonoBehaviour
+public class PlayerInputControll : NetworkBehaviour
 {
     //INPUTACTIONS
     PlayerInput playerinput;
@@ -34,36 +35,45 @@ public class PlayerInputControll : MonoBehaviour
     public InputActionCallBack interactPerformedCallback;
     public InputActionCallBack interactCanceledCallback;
 
-    private void Start()
+    public override void OnStartClient()
     {
         playerinput = GetComponent<PlayerInput>();
-        switch (controllerType)
+        if (!IsOwner)
         {
-            case ControllerType.Keyboard:
-                playerinput.SwitchCurrentActionMap(Keyboard);
-                break;
-            case ControllerType.Gamepad:
-                playerinput.SwitchCurrentActionMap(Gamepad);
-                break;
-            default:
-                break;
+            playerinput.enabled = false;
         }
-        inputActionAsset = playerinput.actions;
-        move = playerinput.currentActionMap.FindAction("Move");
-        look = playerinput.currentActionMap.FindAction("Look");
-        attack = playerinput.currentActionMap.FindAction("Attack");
-        interact = playerinput.currentActionMap.FindAction("Interact");
-        reload = playerinput.currentActionMap.FindAction("Reload");
+        else
+        {
+            switch (controllerType)
+            {
+                case ControllerType.Keyboard:
+                    playerinput.SwitchCurrentActionMap(Keyboard);
+                    break;
+                case ControllerType.Gamepad:
+                    playerinput.SwitchCurrentActionMap(Gamepad);
+                    break;
+                default:
+                    break;
+            }
+            inputActionAsset = playerinput.actions;
+            move = playerinput.currentActionMap.FindAction("Move");
+            look = playerinput.currentActionMap.FindAction("Look");
+            attack = playerinput.currentActionMap.FindAction("Attack");
+            interact = playerinput.currentActionMap.FindAction("Interact");
+            reload = playerinput.currentActionMap.FindAction("Reload");
 
-        move.performed += MovePerformed;
-        move.canceled += MoveCancle;
-        look.performed += LookPerformed;
-        attack.started += AttackStart;
-        attack.canceled += AttackCancel;
-        interact.started += InteractStart;
-        interact.performed += InteractPerformed;
-        interact.canceled += InteractCanceled;
-        reload.started += ReloadStart;
+            move.performed += MovePerformed;
+            move.canceled += MoveCancle;
+            look.performed += LookPerformed;
+            attack.started += AttackStart;
+            attack.canceled += AttackCancel;
+            interact.started += InteractStart;
+            interact.performed += InteractPerformed;
+            interact.canceled += InteractCanceled;
+            reload.started += ReloadStart;
+        }
+            
+            
     }
 
     private void OnEnable()

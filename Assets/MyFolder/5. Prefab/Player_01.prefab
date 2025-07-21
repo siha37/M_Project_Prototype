@@ -175,6 +175,7 @@ GameObject:
   - component: {fileID: 102000719561058656}
   - component: {fileID: 8135255082623061277}
   - component: {fileID: -3747450574471003315}
+  - component: {fileID: 1225732615906059595}
   - component: {fileID: 9097450570315586518}
   - component: {fileID: 2641898887914180647}
   - component: {fileID: 8159540077785804002}
@@ -220,11 +221,11 @@ Rigidbody2D:
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
-  m_Mass: 1
+  m_Mass: 50
   m_LinearDamping: 0
   m_AngularDamping: 0.05
   m_GravityScale: 0
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 6200000, guid: d6eec809fdf26ae4cb2268470a31f34d, type: 2}
   m_IncludeLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -265,7 +266,7 @@ BoxCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
@@ -300,6 +301,9 @@ MonoBehaviour:
   <PredictedSpawn>k__BackingField: {fileID: 0}
   <PredictedOwner>k__BackingField: {fileID: 0}
   NetworkBehaviours:
+  - {fileID: 1225732615906059595}
+  - {fileID: 2641898887914180647}
+  - {fileID: 5869935300169224175}
   - {fileID: -101737973074151377}
   InitializedParentNetworkBehaviour: {fileID: 0}
   InitializedNestedNetworkObjects: []
@@ -334,6 +338,51 @@ MonoBehaviour:
     Rotation: {x: -0, y: -0, z: -0, w: 1}
     Scale: {x: 1, y: 1, z: 1}
     IsValid: 1
+--- !u!114 &1225732615906059595
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2923438329492420310}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2836e36774ca1c4bbbee976e17b649c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _componentIndexCache: 0
+  _addedNetworkObject: {fileID: -3747450574471003315}
+  _networkObjectCache: {fileID: -3747450574471003315}
+  _componentConfiguration: 0
+  _synchronizeParent: 0
+  _packing:
+    Position: 1
+    Rotation: 1
+    Scale: 0
+  _interpolation: 2
+  _extrapolation: 2
+  _enableTeleport: 0
+  _teleportThreshold: 1
+  _clientAuthoritative: 1
+  _sendToOwner: 1
+  _interval: 1
+  _synchronizePosition: 1
+  _positionSensitivity: 0.001
+  _positionSnapping:
+    X: 0
+    Y: 0
+    Z: 0
+  _synchronizeRotation: 1
+  _rotationSnapping:
+    X: 0
+    Y: 0
+    Z: 0
+  _synchronizeScale: 0
+  _scaleSensitivity: 0.001
+  _scaleSnapping:
+    X: 0
+    Y: 0
+    Z: 0
 --- !u!114 &9097450570315586518
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -376,7 +425,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8862af5e3c73e4544a98c111f832f1bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  controllerType: 1
+  _componentIndexCache: 1
+  _addedNetworkObject: {fileID: -3747450574471003315}
+  _networkObjectCache: {fileID: -3747450574471003315}
+  controllerType: 0
 --- !u!114 &8159540077785804002
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -404,6 +456,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c643452fd9417904ea7ee8670edb9416, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _componentIndexCache: 2
+  _addedNetworkObject: {fileID: -3747450574471003315}
+  _networkObjectCache: {fileID: -3747450574471003315}
   shotPivot: {fileID: 4854400107744536206}
   shotPoint: {fileID: 9182083990198720136}
   bulletPrefab: {fileID: 3866963951463671101, guid: 77bfba42c2ec86d4398542be0eb7d82a, type: 3}
@@ -451,7 +506,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8a6a39c46bf52104ba8efe3100bce3f7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 0
+  _componentIndexCache: 3
   _addedNetworkObject: {fileID: -3747450574471003315}
   _networkObjectCache: {fileID: -3747450574471003315}
 --- !u!1 &4855864271696374617

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
+using Newtonsoft.Json;
 
 public class TCPNetworkManager : MonoBehaviour
 {
@@ -67,19 +68,28 @@ public class TCPNetworkManager : MonoBehaviour
         try
         {
             UpdateConnectionStatus("서버 연결 테스트 중...");
-            
+
             if (!TcpClientHelper.IsServerReachable(ServerConfig.SERVER_IP, ServerConfig.SERVER_PORT))
             {
                 UpdateConnectionStatus("서버에 연결할 수 없습니다");
                 OnConnectionError?.Invoke(new NetworkError(NetworkErrorType.ServerUnreachable, "서버에 연결할 수 없습니다"));
                 return false;
             }
-            
+
+            // ★ 최초 인증 요청
+            var authSuccess = await AuthAsync("플레이어닉네임"); // 닉네임은 적절히 전달
+            if (!authSuccess)
+            {
+                UpdateConnectionStatus("인증 실패");
+                OnConnectionError?.Invoke(new NetworkError(NetworkErrorType.Unknown, "인증 실패"));
+                return false;
+            }
+
             var rooms = await roomGuest.GetRoomListAsync();
             UpdateConnectionStatus("서버 연결 성공");
             isConnected = true;
             OnConnectionStatusChanged?.Invoke(true);
-            
+
             return true;
         }
         catch (Exception ex)
@@ -97,7 +107,7 @@ public class TCPNetworkManager : MonoBehaviour
         try
         {
             UpdateConnectionStatus("방을 생성하는 중...");
-            var success = await roomHost.CreateRoomAsync(roomName, maxPlayers);
+            var success = await roomHost.CreateRoomWithRetryAsync(roomName, maxPlayers);
             
             if (success)
             {
@@ -288,6 +298,47 @@ public class TCPNetworkManager : MonoBehaviour
     public string GetCurrentRoomId()
     {
         return roomHost?.GetRoomId();
+    }
+
+    private string sessionToken = null;
+
+    public string GetSessionToken()
+    {
+        return sessionToken;
+    }
+
+    private void SetSessionToken(string token)
+    {
+        sessionToken = token;
+        Debug.Log($"[TCPNetworkManager] 세션 토큰 저장: {token}");
+    }
+
+    public async Task<bool> AuthAsync(string nickname)
+    {
+        var payload = new
+        {
+            type = "auth",
+            deviceId = DeviceIdentifier.GetDeviceId(),
+            nickname = nickname
+        };
+
+        var response = await TcpClientHelper.SendJsonAsync<ApiResponse>(
+            ServerConfig.SERVER_IP,
+            ServerConfig.SERVER_PORT,
+            payload
+        );
+
+        if (response.success && response.data != null)
+        {
+            var dict = JsonConvert.DeserializeObject<Dictionary<string, object>>(response.data.ToString());
+            if (dict != null && dict.ContainsKey("sessionToken"))
+            {
+                SetSessionToken(dict["sessionToken"].ToString());
+                return true;
+            }
+        }
+        Debug.LogError("세션 토큰 발급 실패");
+        return false;
     }
     
     void OnDestroy()

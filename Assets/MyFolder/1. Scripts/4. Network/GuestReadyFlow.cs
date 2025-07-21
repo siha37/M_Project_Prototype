@@ -12,7 +12,7 @@ public class GuestReadyFlow : MonoBehaviour
     }
     private void OnFishNetConnectionChanged(bool connected)
     {
-        if (connected && FishNetConnector.Instance.IsClient() && !isSceneLoading)
+        if (connected && !FishNetConnector.Instance.IsHost() && FishNetConnector.Instance.IsClient() && !isSceneLoading)
         {
             isSceneLoading = true;
             Debug.Log("게스트 FishNet 연결 완료! Ready 씬으로 이동");

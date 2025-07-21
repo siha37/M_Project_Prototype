@@ -215,7 +215,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 136880870}
-  - component: {fileID: 136880871}
+  - component: {fileID: 136880873}
   m_Layer: 0
   m_Name: PlayerSpawner
   m_TagString: Untagged
@@ -240,7 +240,7 @@ Transform:
   - {fileID: 554868636}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &136880871
+--- !u!114 &136880873
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -332,7 +332,7 @@ GameObject:
   - component: {fileID: 925703383}
   m_Layer: 0
   m_Name: Camera
-  m_TagString: Untagged
+  m_TagString: MainCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

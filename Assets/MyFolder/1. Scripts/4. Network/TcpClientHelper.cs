@@ -6,6 +6,7 @@ using System.IO;
 using System.IO.Compression;
 using Newtonsoft.Json;
 using UnityEngine;
+using System.Collections.Generic; // Added for Dictionary
 
 public static class TcpClientHelper
 {
@@ -94,6 +95,19 @@ public static class TcpClientHelper
             Debug.LogError($"[TcpClientHelper] 응답 처리 오류: {ex.Message}");
             throw;
         }
+    }
+    
+    public static async Task<T> SendAuthedJsonAsync<T>(string ip, int port, object payload, string deviceId, string sessionToken)
+    {
+        // payload를 Dictionary로 변환
+        var dict = payload as IDictionary<string, object> ?? new Dictionary<string, object>();
+        foreach (var prop in payload.GetType().GetProperties())
+        {
+            dict[prop.Name] = prop.GetValue(payload, null);
+        }
+        dict["deviceId"] = deviceId;
+        dict["sessionToken"] = sessionToken;
+        return await SendJsonAsync<T>(ip, port, dict);
     }
     
     private static async Task ConnectAsync(string ip, int port)
