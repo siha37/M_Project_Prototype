@@ -6,6 +6,7 @@ using UnityEngine.UI;
 public class LobbyUIManager : MonoBehaviour
 {
     [SerializeField] private LobbyNetworkManager lobbyNetworkManager;
+    [SerializeField] private NetworkRoomManager networkRoomManager;
 
     [Header("UI References")]
     [SerializeField] private GameObject roomListPanel;
@@ -14,44 +15,29 @@ public class LobbyUIManager : MonoBehaviour
 
     private readonly List<GameObject> spawnedEntries = new();
 
-    private void Awake()
-    {
-        if (roomListPanel == null || roomContent == null || hostRoomIdText == null)
-            BuildDefaultUI();
-    }
-
     private void Start()
     {
         if (roomListPanel != null)
             roomListPanel.SetActive(false);
+        
+        // NetworkRoomManager 찾기
+        if (networkRoomManager == null)
+            networkRoomManager = FindObjectOfType<NetworkRoomManager>();
+        
+        // 방 목록 업데이트 이벤트 구독
+        if (networkRoomManager != null)
+        {
+            networkRoomManager.OnRoomListUpdated += RefreshRoomList;
+        }
     }
 
-    private void BuildDefaultUI()
+    private void OnDestroy()
     {
-        Canvas canvas = new GameObject("LobbyCanvas").AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.gameObject.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        canvas.gameObject.AddComponent<GraphicRaycaster>();
-
-        GameObject createBtn = CreateButton(canvas.transform, "Create Room", new Vector2(-100, 100));
-        createBtn.GetComponent<Button>().onClick.AddListener(CreateRoom);
-
-        GameObject joinBtn = CreateButton(canvas.transform, "Join Room", new Vector2(100, 100));
-        joinBtn.GetComponent<Button>().onClick.AddListener(ShowRoomList);
-
-        GameObject idTextObj = new GameObject("RoomIdText", typeof(RectTransform), typeof(TMP_Text));
-        idTextObj.transform.SetParent(canvas.transform, false);
-        hostRoomIdText = idTextObj.GetComponent<TMP_Text>();
-        hostRoomIdText.alignment = TextAlignmentOptions.Center;
-        hostRoomIdText.rectTransform.anchoredPosition = new Vector2(0, 50);
-
-        roomListPanel = new GameObject("RoomListPanel", typeof(RectTransform));
-        roomListPanel.transform.SetParent(canvas.transform, false);
-        roomListPanel.SetActive(false);
-        roomContent = roomListPanel.GetComponent<RectTransform>();
-        VerticalLayoutGroup vlg = roomListPanel.AddComponent<VerticalLayoutGroup>();
-        vlg.childControlHeight = true;
-        vlg.childForceExpandHeight = false;
+        // 이벤트 구독 해제
+        if (networkRoomManager != null)
+        {
+            networkRoomManager.OnRoomListUpdated -= RefreshRoomList;
+        }
     }
 
     private GameObject CreateButton(Transform parent, string text, Vector2 pos)
@@ -71,7 +57,7 @@ public class LobbyUIManager : MonoBehaviour
     {
         lobbyNetworkManager.StartHost();
         if (hostRoomIdText != null)
-            hostRoomIdText.text = $"Room ID: {lobbyNetworkManager.CurrentRoomId}";
+            hostRoomIdText.text = "방 생성 중...";
     }
 
     public void ShowRoomList()
@@ -87,10 +73,10 @@ public class LobbyUIManager : MonoBehaviour
             Destroy(go);
         spawnedEntries.Clear();
 
-        if (roomContent == null)
+        if (roomContent == null || networkRoomManager == null)
             return;
 
-        foreach (var room in RoomManager.Instance.Rooms)
+        foreach (var room in networkRoomManager.Rooms)
         {
             GameObject entry = new GameObject("RoomEntry", typeof(RectTransform));
             entry.transform.SetParent(roomContent, false);
@@ -99,18 +85,18 @@ public class LobbyUIManager : MonoBehaviour
             layout.childForceExpandHeight = false;
             layout.childForceExpandWidth = false;
 
-            GameObject textObj = new GameObject("RoomId", typeof(TMP_Text));
+            GameObject textObj = new GameObject("RoomId");
             textObj.transform.SetParent(entry.transform, false);
-            TMP_Text text = textObj.GetComponent<TMP_Text>();
-            text.text = room.RoomId;
+            TextMeshProUGUI text = textObj.AddComponent<TextMeshProUGUI>();
+            text.text = $"{room.RoomId} ({room.CurrentPlayers}/{room.MaxPlayers})";
             text.fontSize = 24;
 
-            GameObject buttonObj = new GameObject("JoinButton", typeof(Button), typeof(TMP_Text));
+            GameObject buttonObj = new GameObject("JoinButton");
             buttonObj.transform.SetParent(entry.transform, false);
-            TMP_Text btnText = buttonObj.GetComponent<TMP_Text>();
+            TextMeshProUGUI btnText = buttonObj.AddComponent<TextMeshProUGUI>();
             btnText.text = "Join";
             btnText.fontSize = 24;
-            Button button = buttonObj.GetComponent<Button>();
+            Button button = buttonObj.AddComponent<Button>();
             string id = room.RoomId;
             button.onClick.AddListener(() => JoinRoom(id));
 
