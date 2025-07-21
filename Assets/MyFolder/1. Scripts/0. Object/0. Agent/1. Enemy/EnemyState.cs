@@ -43,4 +43,27 @@ public class EnemyState : AgentState
             StartCoroutine(DeathSequence());
         }
     }
+
+    // 네트워크 동기화를 위해 public으로 변경
+    public IEnumerator DeathSequence()
+    {
+        isDead = true;
+        
+        // 첫 번째 자식 오브젝트의 SpriteRenderer 컴포넌트 가져오기
+        if (transform.childCount > 0)
+        {
+            SpriteRenderer spriteRenderer = transform.GetChild(0).GetComponent<SpriteRenderer>();
+            if (spriteRenderer != null)
+            {
+                // 어두운 보라색으로 변경
+                spriteRenderer.color = new Color(0.5f, 0f, 0.5f, 1f);
+            }
+        }
+
+        // 2초 대기
+        yield return new WaitForSeconds(2f);
+
+        // 사망 처리
+        OnDeath();
+    }
 }
