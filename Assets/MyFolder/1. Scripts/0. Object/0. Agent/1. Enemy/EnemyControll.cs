@@ -1,13 +1,18 @@
 ﻿using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
+using FishNet.Object;
 
-public class EnemyControll : MonoBehaviour
+public class EnemyControll : NetworkBehaviour
 {
     private AgentUI agentUI;
     [SerializeField] private GameObject target;
     private NavMeshAgent navAgent;
     private EnemyState state;
+    private EnemyNetworkSync networkSync;
+    
+    // AI 상태 관리
+    private string currentAIState = "Patrol";
     private bool canShoot = true;
     private bool isReloading = false;
     private bool isFindingPosition = false;
@@ -20,41 +25,62 @@ public class EnemyControll : MonoBehaviour
     private float strafeChangeInterval = 2f; // 회피 방향 변경 간격
     private float lastStrafeChangeTime; // 마지막 회피 방향 변경 시간
 
-    [SerializeField] private Transform shotPivot;
+    [SerializeField] public Transform shotPivot;
     [SerializeField] private Transform shotPoint;
-    [SerializeField] private GameObject bulletPrefab;
+    [SerializeField] public GameObject bulletPrefab;
     [SerializeField] private float aimPrecision = 0.1f; // 목표 조준 정밀도 (0~1)
     [SerializeField] private float searchRadius = 5f; // 사격 가능 위치 탐색 반경
     [SerializeField] private float searchAngle = 45f; // 사격 가능 위치 탐색 각도
     [SerializeField] private LayerMask obstacleLayer; // Wall과 Agent 레이어만 체크
     [SerializeField] private float minDistanceToTarget = 2f; // 최소 거리
 
-    private void Awake()
+    public override void OnStartServer()
+    {
+        InitializeComponents();
+        Debug.Log($"[{gameObject.name}] 서버에서 EnemyControll 시작");
+    }
+
+    public override void OnStartClient()
+    {
+        InitializeComponents();
+        
+        // 클라이언트에서는 AI 로직 비활성화
+        if (!IsServer)
+        {
+            enabled = false;
+            Debug.Log($"[{gameObject.name}] 클라이언트에서 EnemyControll 비활성화");
+        }
+    }
+
+    private void InitializeComponents()
     {
         // 컴포넌트 초기화
         navAgent = GetComponent<NavMeshAgent>();
-        navAgent.updateRotation = false;
-        navAgent.updateUpAxis = false;
+        if (navAgent != null)
+        {
+            navAgent.updateRotation = false;
+            navAgent.updateUpAxis = false;
+        }
 
         agentUI = GetComponent<AgentUI>();
         state = GetComponent<EnemyState>();
+        networkSync = GetComponent<EnemyNetworkSync>();
 
         if (navAgent == null)
         {
             Debug.LogError($"[{gameObject.name}] NavMeshAgent 컴포넌트가 없습니다.");
-            enabled = false;
             return;
-        }
-
-        if (agentUI == null)
-        {
-            Debug.LogWarning($"[{gameObject.name}] AgentUI 컴포넌트가 없습니다.");
         }
 
         if (state == null)
         {
             Debug.LogError($"[{gameObject.name}] EnemyState 컴포넌트가 없습니다.");
-            enabled = false;
+            return;
+        }
+
+        if (networkSync == null)
+        {
+            Debug.LogError($"[{gameObject.name}] EnemyNetworkSync 컴포넌트가 없습니다.");
             return;
         }
 
@@ -62,8 +88,10 @@ public class EnemyControll : MonoBehaviour
         obstacleLayer = (1 << LayerMask.NameToLayer("Wall")) | (1 << LayerMask.NameToLayer("Agent"));
     }
 
-    public void Init(GameObject target,Vector2 startPos)
+    public void Init(GameObject target, Vector2 startPos)
     {
+        if (!IsServer) return; // 서버에서만 초기화
+
         if (!target)
         {
             Debug.LogError($"[{gameObject.name}] 초기화할 타겟이 없습니다.");
@@ -74,19 +102,30 @@ public class EnemyControll : MonoBehaviour
         lastKnownTargetPosition = target.transform.position;
 
         // NavMeshAgent 초기 설정
-        navAgent.destination = startPos;
-        navAgent.speed = AgentState.speed;
-        navAgent.stoppingDistance = EnemyState.targetDistance;
-        navAgent.updateRotation = false; // 회전은 직접 제어
+        if (navAgent != null)
+        {
+            navAgent.destination = startPos;
+            navAgent.speed = AgentState.speed;
+            navAgent.stoppingDistance = EnemyState.targetDistance;
+            navAgent.updateRotation = false;
+        }
 
-        Debug.Log($"[{gameObject.name}] 초기화 완료 - 타겟: {target.name}");
+        // 네트워크 동기화 초기화
+        if (networkSync != null)
+        {
+            NetworkObject targetNetworkObject = target.GetComponent<NetworkObject>();
+            networkSync.RequestUpdateAIState("Patrol", startPos, targetNetworkObject);
+        }
+
+        Debug.Log($"[{gameObject.name}] 서버에서 초기화 완료 - 타겟: {target.name}");
     }
 
     private void Update()
     {
-        if (!target)
+        if (!IsServer) return; // 서버에서만 실행
+
+        if (!target || state.IsDead)
         {
-            Debug.LogWarning($"[{gameObject.name}] 타겟이 없습니다.");
             return;
         }
 
@@ -100,8 +139,14 @@ public class EnemyControll : MonoBehaviour
         // 회피 방향 변경 체크
         if (Time.time - lastStrafeChangeTime >= strafeChangeInterval)
         {
-            strafeDirection *= -1f; // 방향 반전
+            strafeDirection *= -1f;
             lastStrafeChangeTime = Time.time;
+            
+            // 네트워크 동기화
+            if (networkSync != null)
+            {
+                networkSync.RequestUpdateStrafeState(true, strafeDirection);
+            }
         }
 
         // 목표와의 거리 체크
@@ -113,6 +158,7 @@ public class EnemyControll : MonoBehaviour
             if (CheckLineOfSight())
             {
                 isFindingPosition = false;
+                UpdateAIState("Attack");
                 LookAtTarget();
                 
                 // 공격 가능 상태이고 재장전 중이 아닐 때
@@ -130,6 +176,7 @@ public class EnemyControll : MonoBehaviour
             }
             else if (!isFindingPosition)
             {
+                UpdateAIState("Chase");
                 Debug.Log($"[{gameObject.name}] 시야가 막혀 사격 위치 탐색 시작");
                 StartCoroutine(FindShootingPosition());
             }
@@ -137,9 +184,36 @@ public class EnemyControll : MonoBehaviour
         else if (distanceToTarget < minDistanceToTarget)
         {
             // 너무 가까이 있을 경우 후퇴
+            UpdateAIState("Return");
             Vector3 retreatDirection = (transform.position - target.transform.position).normalized;
             Vector3 retreatPosition = transform.position + retreatDirection * minDistanceToTarget;
             navAgent.SetDestination(retreatPosition);
+            
+            // 네트워크 동기화
+            if (networkSync != null)
+            {
+                NetworkObject targetNetworkObject = target.GetComponent<NetworkObject>();
+                networkSync.RequestUpdateAIState("Return", retreatPosition, targetNetworkObject);
+            }
+        }
+        else
+        {
+            UpdateAIState("Chase");
+        }
+    }
+
+    private void UpdateAIState(string newState)
+    {
+        if (currentAIState != newState)
+        {
+            currentAIState = newState;
+            
+            // 네트워크 동기화
+            if (networkSync != null && target != null)
+            {
+                NetworkObject targetNetworkObject = target.GetComponent<NetworkObject>();
+                networkSync.RequestUpdateAIState(newState, target.transform.position, targetNetworkObject);
+            }
         }
     }
 
@@ -152,7 +226,7 @@ public class EnemyControll : MonoBehaviour
             // 타겟을 향한 방향 벡터
             Vector3 directionToTarget = (target.transform.position - transform.position).normalized;
             
-            // 회피 기동을 위한 수직 방향 벡터 (2D에서는 z축을 기준으로 회전)
+            // 회피 기동을 위한 수직 방향 벡터
             Vector3 perpendicularDirection = new Vector3(-directionToTarget.y, directionToTarget.x, 0);
             
             // 회피 기동 위치 계산
@@ -163,11 +237,23 @@ public class EnemyControll : MonoBehaviour
             if (NavMesh.SamplePosition(strafePosition, out hit, strafeDistance, NavMesh.AllAreas))
             {
                 navAgent.SetDestination(hit.position);
+                
+                // 네트워크 동기화
+                if (networkSync != null)
+                {
+                    networkSync.RequestUpdateTargetPosition(hit.position);
+                }
             }
             else
             {
                 // 유효한 위치를 찾지 못한 경우 타겟 위치로 이동
                 navAgent.SetDestination(lastKnownTargetPosition);
+                
+                // 네트워크 동기화
+                if (networkSync != null)
+                {
+                    networkSync.RequestUpdateTargetPosition(lastKnownTargetPosition);
+                }
             }
         }
     }
@@ -183,7 +269,7 @@ public class EnemyControll : MonoBehaviour
         while (attempts < maxAttempts)
         {
             // NavMeshAgent가 비활성화되어 있다면 코루틴 종료
-            if (!navAgent.enabled)
+            if (!navAgent.enabled || state.IsDead)
             {
                 isFindingPosition = false;
                 yield break;
@@ -236,20 +322,27 @@ public class EnemyControll : MonoBehaviour
             if (bestPosition != transform.position)
             {
                 // NavMeshAgent가 비활성화되어 있다면 코루틴 종료
-                if (!navAgent.enabled)
+                if (!navAgent.enabled || state.IsDead)
                 {
                     isFindingPosition = false;
                     yield break;
                 }
 
                 navAgent.SetDestination(bestPosition);
+                
+                // 네트워크 동기화
+                if (networkSync != null)
+                {
+                    networkSync.RequestUpdateTargetPosition(bestPosition);
+                }
+
                 float moveTimeout = 5f; // 이동 타임아웃
                 float startTime = Time.time;
 
                 while (Vector3.Distance(transform.position, bestPosition) > 0.5f)
                 {
                     // NavMeshAgent가 비활성화되어 있다면 코루틴 종료
-                    if (!navAgent.enabled)
+                    if (!navAgent.enabled || state.IsDead)
                     {
                         isFindingPosition = false;
                         yield break;
@@ -308,45 +401,27 @@ public class EnemyControll : MonoBehaviour
         angle += randomOffset;
         
         shotPivot.rotation = Quaternion.Euler(0, 0, angle);
+        
+        // 네트워크 동기화
+        if (networkSync != null)
+        {
+            networkSync.RequestUpdateLookAngle(angle);
+        }
     }
 
     private void Attack()
     {
         if (Time.time - lastAttackTime < AgentState.bulletDelay) return;
 
-        // 총알 생성 및 발사
-        GameObject bullet = Instantiate(bulletPrefab, shotPoint.position, shotPoint.rotation);
-        Projectile projectile = bullet.GetComponent<Projectile>();
-        if (projectile != null)
+        // 네트워크 동기화된 발사 처리
+        if (networkSync != null)
         {
-            projectile.Init(AgentState.bulletSpeed, AgentState.bulletDamage, AgentState.bulletRange, gameObject);
-            state.UpdateBulletCount(-1);
+            float angle = shotPivot.rotation.eulerAngles.z;
+            networkSync.RequestShoot(angle, shotPoint.position);
             lastAttackTime = Time.time;
-
-            // 네트워크 동기화를 위한 슈팅 이벤트 호출
-            var enemyNetwork = GetComponent<MonoBehaviour>();
-            if (enemyNetwork != null && enemyNetwork.GetType().Name == "EnemyNetwork")
-            {
-                var onShootMethod = enemyNetwork.GetType().GetMethod("OnShoot");
-                if (onShootMethod != null)
-                {
-                    onShootMethod.Invoke(enemyNetwork, new object[] { shotPoint.position, shotPoint.rotation });
-                }
-            }
-
-            if (state.bulletCurrentCount <= 0)
-            {
-                StartCoroutine(Reload());
-            }
-            else
-            {
-                StartCoroutine(ShootDelay());
-            }
         }
-        else
-        {
-            Debug.LogError($"[{gameObject.name}] Projectile 컴포넌트를 찾을 수 없습니다.");
-        }
+
+        StartCoroutine(ShootDelay());
     }
 
     private IEnumerator ShootDelay()
@@ -361,22 +436,44 @@ public class EnemyControll : MonoBehaviour
         if (isReloading) yield break;
 
         isReloading = true;
-        agentUI.StartReloadUI();
         
+        // 네트워크 동기화된 재장전 처리
+        if (networkSync != null)
+        {
+            networkSync.RequestEnemyReload();
+        }
+        
+        // 서버에서 실제 재장전 처리
         float reloadTimer = 0f;
         while (reloadTimer < AgentState.bulletReloadTime)
         {
             reloadTimer += Time.deltaTime;
-            float progress = reloadTimer / AgentState.bulletReloadTime;
-            agentUI.UpdateReloadProgress(progress);
             yield return null;
         }
 
-        state.UpdateBulletCount(AgentState.bulletMaxCount);
-        agentUI.EndReloadUI();
         isReloading = false;
-        Debug.Log($"[{gameObject.name}] 재장전 완료");
+        Debug.Log($"[{gameObject.name}] 서버에서 재장전 완료");
     }
+
+    // 네트워크 동기화에서 호출할 공개 메서드들
+    public void SetAIState(string newState)
+    {
+        currentAIState = newState;
+    }
+
+    public void SetTargetPosition(Vector3 position)
+    {
+        lastKnownTargetPosition = position;
+    }
+
+    public void SetStrafeState(bool isStrafing, float direction)
+    {
+        strafeDirection = direction;
+    }
+
+    public bool CanShoot => canShoot;
+    public bool IsReloading => isReloading;
+    public string CurrentAIState => currentAIState;
 
     private void OnDrawGizmosSelected()
     {

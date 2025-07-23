@@ -183,6 +183,7 @@ GameObject:
   - component: {fileID: 3505672387467433980}
   - component: {fileID: 7563089925395084894}
   - component: {fileID: -101737973074151377}
+  - component: {fileID: 6657940407241722385}
   m_Layer: 6
   m_Name: Player_01
   m_TagString: Player
@@ -442,6 +443,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   currentHp: 0
+  isDead: 0
   bulletCurrentCount: 0
   reviveCurrentCount: 0
 --- !u!114 &5869935300169224175
@@ -509,6 +511,21 @@ MonoBehaviour:
   _componentIndexCache: 3
   _addedNetworkObject: {fileID: -3747450574471003315}
   _networkObjectCache: {fileID: -3747450574471003315}
+--- !u!114 &6657940407241722385
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2923438329492420310}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b35328b8de1591148ba1a7b013391c38, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _componentIndexCache: 255
+  _addedNetworkObject: {fileID: -3747450574471003315}
+  _networkObjectCache: {fileID: 0}
 --- !u!1 &4855864271696374617
 GameObject:
   m_ObjectHideFlags: 0

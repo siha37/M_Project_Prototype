@@ -669,6 +669,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1f9494c6f5d0c654d98ef57620f8d316, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _componentIndexCache: 0
+  _addedNetworkObject: {fileID: 0}
+  _networkObjectCache: {fileID: 0}
   target: {fileID: 0}
   shotPivot: {fileID: 7987831769807400613}
   shotPoint: {fileID: 1769733156254832991}
@@ -693,6 +696,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   currentHp: 0
+  isDead: 0
   bulletCurrentCount: 0
 --- !u!114 &6625148477299368903
 MonoBehaviour:

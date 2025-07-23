@@ -1,0 +1,423 @@
+using UnityEngine;
+using FishNet.Object;
+using System.Collections;
+using FishNet.Object.Synchronizing;
+using FishNet.Connection;
+
+public class AgentNetworkSync : NetworkBehaviour
+{
+    // 공통 상태 동기화
+    protected readonly SyncVar<float> syncCurrentHp = new SyncVar<float>();
+    protected readonly SyncVar<bool> syncIsDead = new SyncVar<bool>();
+    protected readonly SyncVar<float> syncBulletCurrentCount = new SyncVar<float>();
+    protected readonly SyncVar<bool> syncIsReloading = new SyncVar<bool>();
+    protected readonly SyncVar<float> syncLookAngle = new SyncVar<float>();
+    
+    [Header("Shooting Settings")]
+    [SerializeField] protected GameObject bulletPrefab;
+    [SerializeField] protected float bulletSpeed = 15f;
+    [SerializeField] protected float bulletLifetime = 5f;
+    
+    [Header("Interpolation Settings")]
+    [SerializeField] protected float rotationLerpSpeed = 20f; // 회전 보간 속도
+    
+    // 보간용 타겟 값들
+    protected float targetLookAngle;
+    protected float currentLookAngle;
+    protected bool shouldInterpolateRotation = false;
+    
+    // 공통 컴포넌트 참조
+    protected AgentState agentState;
+    protected AgentUI agentUI;
+    protected Transform agentTransform;
+    
+    // 공통 이벤트
+    public delegate void OnAgentDamagedHandler(float damage, Vector2 hitDirection, NetworkConnection attacker);
+    public delegate void OnAgentDeathHandler(NetworkConnection killer);
+    
+    public event OnAgentDamagedHandler OnAgentDamaged;
+    public event OnAgentDeathHandler OnAgentDeath;
+    
+    public override void OnStartServer()
+    {
+        InitializeComponents();
+        InitializeSyncVars();
+    }
+    
+    public override void OnStartClient()
+    {
+        InitializeComponents();
+        RegisterSyncVarCallbacks();
+    }
+    
+    protected virtual void Update()
+    {
+        if (!IsOwner && shouldInterpolateRotation)
+        {
+            // 부드러운 각도 보간
+            float angleDifference = Mathf.DeltaAngle(currentLookAngle, targetLookAngle);
+            
+            if (Mathf.Abs(angleDifference) > 0.5f) // 0.5도 이상 차이날 때만 보간
+            {
+                currentLookAngle = Mathf.LerpAngle(currentLookAngle, targetLookAngle, 
+                    Time.deltaTime * rotationLerpSpeed);
+                
+                // 실제 회전 적용
+                ApplyLookRotation(currentLookAngle);
+            }
+            else
+            {
+                // 거의 도달했으면 정확한 값으로 설정
+                currentLookAngle = targetLookAngle;
+                ApplyLookRotation(currentLookAngle);
+                shouldInterpolateRotation = false;
+            }
+        }
+    }
+    
+    protected virtual void ApplyLookRotation(float angle)
+    {
+        // 자식 클래스에서 구현
+    }
+    
+    protected virtual void RegisterSyncVarCallbacks()
+    {
+        syncCurrentHp.OnChange += OnCurrentHpChanged;
+        syncIsDead.OnChange += OnIsDeadChanged;
+        syncBulletCurrentCount.OnChange += OnBulletCountChanged;
+        syncIsReloading.OnChange += OnIsReloadingChanged;
+        syncLookAngle.OnChange += OnLookAngleChanged;
+    }
+    
+    protected virtual void InitializeComponents()
+    {
+        agentState = GetComponent<AgentState>();
+        agentUI = GetComponent<AgentUI>();
+        agentTransform = transform;
+        
+        if (agentState == null)
+        {
+            Debug.LogError($"[{gameObject.name}] AgentState 컴포넌트를 찾을 수 없습니다.");
+        }
+        
+        if (agentUI == null)
+        {
+            Debug.LogWarning($"[{gameObject.name}] AgentUI 컴포넌트를 찾을 수 없습니다.");
+        }
+    }
+    
+    protected virtual void InitializeSyncVars()
+    {
+        if (agentState != null)
+        {
+            syncCurrentHp.Value = AgentState.maxHp;
+            syncBulletCurrentCount.Value = AgentState.bulletMaxCount;
+            syncIsDead.Value = false;
+            syncIsReloading.Value = false;
+            syncLookAngle.Value = 0f;
+            
+            // ✅ UI 초기화
+            if (agentUI != null)
+            {
+                agentUI.InitializeUI(AgentState.maxHp, AgentState.maxHp, (int)AgentState.bulletMaxCount, (int)AgentState.bulletMaxCount);
+            }
+        }
+    }
+    
+    // ✅ NetworkConnection 정보를 포함한 데미지 처리
+    [ServerRpc]
+    public virtual void RequestTakeDamage(float damage, Vector2 hitDirection, NetworkConnection attacker = null)
+    {
+        if (agentState != null && !syncIsDead.Value)
+        {
+            Debug.Log($"[{gameObject.name}] 서버에서 데미지 처리: {damage} (공격자: {attacker?.ClientId})");
+            
+            agentState.TakeDamage(damage, hitDirection);
+            UpdateDamageSyncVars();
+            
+            // 모든 클라이언트에 데미지 효과 전송
+            OnDamagedEffect(damage, hitDirection);
+            
+            OnAgentDamaged?.Invoke(damage, hitDirection, attacker);
+            
+            // 사망 시 이벤트 호출
+            if (syncIsDead.Value)
+            {
+                HandleAgentDeath(attacker);
+                OnDeathEffect();
+                OnAgentDeath?.Invoke(attacker);
+            }
+        }
+    }
+    
+    // ✅ 기존 버전과의 호환성을 위한 오버로드
+    [ServerRpc]
+    public virtual void RequestTakeDamage(float damage, Vector2 hitDirection)
+    {
+        RequestTakeDamage(damage, hitDirection, null);
+    }
+    
+    protected virtual void UpdateDamageSyncVars()
+    {
+        if (agentState != null)
+        {
+            syncCurrentHp.Value = agentState.currentHp;
+            syncIsDead.Value = agentState.IsDead;
+        }
+    }
+    
+    // 공통 탄약 처리
+    [ServerRpc]
+    public virtual void RequestUpdateBulletCount(float count)
+    {
+        if (agentState != null)
+        {
+            Debug.Log($"[{gameObject.name}] 서버에서 탄약 업데이트: {count}");
+            
+            agentState.UpdateBulletCount(count);
+            syncBulletCurrentCount.Value = agentState.bulletCurrentCount;
+        }
+    }
+    
+    // 공통 조준 방향 처리
+    [ServerRpc]
+    public virtual void RequestUpdateLookAngle(float angle)
+    {
+        syncLookAngle.Value = angle;
+    }
+    
+    // 공통 재장전 상태 처리
+    [ServerRpc]
+    public virtual void RequestSetReloadingState(bool isReloading)
+    {
+        syncIsReloading.Value = isReloading;
+    }
+    
+    // ✅ FishNet 공식 권장: Pool 시스템 + NetworkConnection 결합
+    [ServerRpc]
+    public virtual void RequestShoot(float angle, Vector3 shotPosition)
+    {
+        Debug.Log($"[{gameObject.name}] 서버에서 발사 처리: {angle} : {shotPosition}");
+        
+        // ✅ BulletManager 초기화 확인 및 대기
+        if (BulletManager.Instance == null)
+        {
+            Debug.LogWarning($"[{gameObject.name}] BulletManager 초기화 대기 중...");
+            StartCoroutine(WaitForBulletManagerAndShoot(angle, shotPosition));
+            return;
+        }
+        
+        // ✅ BulletManager Pool 시스템 활용 (성능 최적화)
+        BulletManager.Instance.FireBulletWithConnection(
+            shotPosition,
+            angle, 
+            AgentState.bulletSpeed,
+            AgentState.bulletDamage,
+            AgentState.bulletRange,
+            base.Owner  // ✅ NetworkConnection 전달
+        );
+        
+        // 탄약 감소
+        RequestUpdateBulletCount(-1);
+        
+        // 발사 효과
+        OnShootEffect(angle, shotPosition);
+    }
+    
+    // ✅ BulletManager 초기화 대기 코루틴
+    private IEnumerator WaitForBulletManagerAndShoot(float angle, Vector3 shotPosition)
+    {
+        float waitTime = 0f;
+        const float maxWaitTime = 5f; // 최대 5초 대기
+        
+        while (BulletManager.Instance == null && waitTime < maxWaitTime)
+        {
+            yield return new WaitForSeconds(0.1f);
+            waitTime += 0.1f;
+        }
+        
+        if (BulletManager.Instance != null)
+        {
+            // ✅ 초기화 완료 후 정상 발사 처리
+            Debug.Log($"[{gameObject.name}] BulletManager 초기화 완료 - 발사 재시도");
+            RequestShoot(angle, shotPosition);
+        }
+        else
+        {
+            Debug.LogError($"[{gameObject.name}] BulletManager 초기화 타임아웃! 발사 취소");
+        }
+    }
+    
+    // ✅ 기존 CreateBullet 메서드 제거 (Pool 시스템 사용으로 불필요)
+        
+    [ObserversRpc]
+    protected virtual void OnShootEffect(float angle, Vector3 position)
+    {
+        #if UNITY_EDITOR
+        Debug.Log($"[{gameObject.name}] 발사 효과 재생: {angle}");
+        #endif
+        // ✅ 모든 클라이언트에서 추가 시각/음향 효과 처리
+        // 자식 클래스에서 구체적인 효과 구현 (총구 화염, 사운드 등)
+    }
+    
+    // SyncVar 변경 시 호출되는 메서드들
+    protected virtual void OnCurrentHpChanged(float oldValue, float newValue, bool asServer)
+    {
+        if (agentState != null)
+        {
+            agentState.currentHp = newValue;
+            
+            // ✅ AgentUI로 직접 업데이트
+            if (agentUI != null)
+            {
+                agentUI.UpdateHealthUI(newValue, AgentState.maxHp);
+            }
+            
+#if UNITY_EDITOR
+            Debug.Log($"[{gameObject.name}] 체력 동기화: {oldValue} -> {newValue}");
+#endif
+        }
+    }
+    
+    protected virtual void OnBulletCountChanged(float oldValue, float newValue, bool asServer)
+    {
+        if (agentState != null)
+        {
+            agentState.bulletCurrentCount = newValue;
+            
+            // ✅ AgentUI로 직접 업데이트
+            if (agentUI != null)
+            {
+                agentUI.UpdateAmmoUI((int)newValue, (int)AgentState.bulletMaxCount);
+            }
+            
+#if UNITY_EDITOR
+            Debug.Log($"[{gameObject.name}] 탄약 동기화: {oldValue} -> {newValue}");
+#endif
+        }
+    }
+    
+    protected virtual void OnIsDeadChanged(bool oldValue, bool newValue, bool asServer)
+    {
+        if (agentState != null)
+        {
+            agentState.isDead = newValue;
+            
+            // ✅ 사망 상태 UI 업데이트 (필요시)
+            if (agentUI != null && newValue)
+            {
+                // TODO: 사망 시 UI 변경 로직 (체력바 숨김, 사망 표시 등)
+            }
+            
+#if UNITY_EDITOR
+            Debug.Log($"[{gameObject.name}] 사망 상태 동기화: {oldValue} -> {newValue}");
+#endif
+        }
+    }
+    
+    protected virtual void OnIsReloadingChanged(bool oldValue, bool newValue, bool asServer)
+    {
+        // ✅ 재장전 UI 업데이트
+        if (agentUI != null)
+        {
+            if (newValue)
+            {
+                agentUI.StartReloadUI();
+            }
+            else
+            {
+                agentUI.EndReloadUI();
+            }
+        }
+        
+#if UNITY_EDITOR
+        Debug.Log($"[{gameObject.name}] 재장전 상태 동기화: {oldValue} -> {newValue}");
+#endif
+    }
+    
+    protected virtual void OnLookAngleChanged(float oldValue, float newValue, bool asServer)
+    {
+        if (!IsOwner)
+        {
+            targetLookAngle = newValue;
+            
+            // 첫 번째 값이면 즉시 설정
+            if (Mathf.Abs(oldValue) < 0.01f)
+            {
+                currentLookAngle = newValue;
+                ApplyLookRotation(currentLookAngle);
+                shouldInterpolateRotation = false;
+            }
+            else
+            {
+                // 일반적인 경우: 보간 처리 시작
+                shouldInterpolateRotation = true;
+            }
+        }
+        
+#if UNITY_EDITOR
+        Debug.Log($"[{gameObject.name}] 조준 방향 동기화: {oldValue} -> {newValue}");
+#endif
+    }
+    
+    // 공통 이벤트 전송
+    [ObserversRpc]
+    protected virtual void OnDamagedEffect(float damage, Vector2 hitDirection)
+    {
+        // 데미지 효과, 사운드 등
+        Debug.Log($"[{gameObject.name}] 데미지 효과 재생: {damage}");
+    }
+    
+    [ObserversRpc]
+    protected virtual void OnDeathEffect()
+    {
+        // 사망 효과, 파티클 등
+        Debug.Log($"[{gameObject.name}] 사망 효과 재생");
+    }
+    
+    // 공통 유틸리티 메서드들
+    public float GetCurrentHp()
+    {
+        return syncCurrentHp.Value;
+    }
+    
+    public bool IsDead()
+    {
+        return syncIsDead.Value;
+    }
+    
+    public float GetBulletCount()
+    {
+        return syncBulletCurrentCount.Value;
+    }
+    
+    public bool IsReloading()
+    {
+        return syncIsReloading.Value;
+    }
+    
+    public float GetLookAngle()
+    {
+        return syncLookAngle.Value;
+    }
+    
+    // ✅ 공격자 정보를 포함한 사망 처리 (상속 클래스에서 오버라이드 가능)
+    protected virtual void HandleAgentDeath(NetworkConnection killer)
+    {
+        // 기본 사망 처리 - 상속 클래스에서 필요에 따라 오버라이드
+        Debug.Log($"[{gameObject.name}] 사망 처리 (킬러: {killer?.ClientId})");
+        
+        // TODO: 킬/데스 통계, 리스폰 로직 등 구현
+    }
+
+    // 디버그 정보 출력
+    protected virtual void OnValidate()
+    {
+        if (Application.isPlaying && syncCurrentHp != null)
+        {
+#if UNITY_EDITOR
+            Debug.Log($"[{gameObject.name}] AgentNetworkSync 상태 - HP: {syncCurrentHp.Value}, Dead: {syncIsDead.Value}, Bullets: {syncBulletCurrentCount.Value}, Reloading: {syncIsReloading.Value}");
+#endif
+        }
+    }
+} 

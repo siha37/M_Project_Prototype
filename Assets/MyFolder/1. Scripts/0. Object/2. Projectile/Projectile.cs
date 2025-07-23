@@ -1,52 +1,196 @@
 using UnityEngine;
+using FishNet.Object;
+using FishNet.Connection;
+using System.Collections;
 
-public class Projectile : MonoBehaviour
+public class Projectile : NetworkBehaviour
 {
-    private float speed;
+    [Header("Projectile Settings")]
+    [SerializeField] private float speed = 15f;
+    [SerializeField] private LayerMask damageableLayers = -1;
+    
+    // ✅ NetworkConnection으로 owner 정보 저장
+    private NetworkConnection ownerConnection;
     private float damage;
     private float lifetime;
+    private Vector3 direction;
     private Rigidbody2D rb;
-    private GameObject owner;  // 생성 주체 저장 변수
-
-    public void Init(float speed, float damage, float lifetime, GameObject owner)
+    
+    public override void OnStartServer()
     {
-        this.speed = speed;
-        this.damage = damage;
-        this.lifetime = lifetime;
-        this.owner = owner;
+        base.OnStartServer();
+        if (rb == null) rb = GetComponent<Rigidbody2D>();
+        
+        // 서버에서만 물리 시뮬레이션 활성화
+        rb.linearVelocity = direction * speed;
+        
+        Debug.Log($"[{gameObject.name}] 서버에서 총알 물리 시작: {speed}");
+    }
 
-        rb = GetComponent<Rigidbody2D>();
-        rb.linearVelocity = transform.right * speed;
+    public override void OnStartClient()
+    {
+        base.OnStartClient();
+        if (!IsServer)
+        {
+            // 클라이언트에서는 물리 비활성화 (네트워크 동기화만)
+            if (rb == null) rb = GetComponent<Rigidbody2D>();
+            rb.isKinematic = true; // 물리 비활성화
+            
+            Debug.Log($"[{gameObject.name}] 클라이언트에서 총알 시각 모드");
+        }
+    }
 
-        // lifetime 초 후 오브젝트 삭제
-        Destroy(gameObject, lifetime);
+    // ✅ NetworkConnection으로 초기화
+    public void Initialize(NetworkConnection owner, float bulletDamage, float bulletLifetime, Vector3 bulletDirection)
+    {
+        ownerConnection = owner;
+        damage = bulletDamage;
+        lifetime = bulletLifetime;
+        direction = bulletDirection.normalized;
+        
+        // 서버에서만 생명주기 관리
+        if (IsServer)
+        {
+            StartCoroutine(DestroyAfterTime(lifetime));
+        }
+    }
+    
+    // ✅ Owner GameObject 안전하게 가져오기
+    private GameObject GetOwnerGameObject()
+    {
+        if (ownerConnection != null && ownerConnection.IsValid)
+        {
+            // FirstObject는 연결된 첫 번째 NetworkObject
+            if (ownerConnection.FirstObject != null)
+            {
+                return ownerConnection.FirstObject.gameObject;
+            }
+            
+            // 또는 특정 조건으로 NetworkObject 찾기
+            foreach (var networkObj in ownerConnection.Objects)
+            {
+                // 플레이어나 적 태그로 식별
+                if (networkObj.gameObject.CompareTag("Player") || 
+                    networkObj.gameObject.CompareTag("Enemy"))
+                {
+                    return networkObj.gameObject;
+                }
+            }
+        }
+        
+        return null;
+    }
+    
+    private IEnumerator DestroyAfterTime(float time)
+    {
+        yield return new WaitForSeconds(time);
+        if (IsServer)
+        {
+            ServerManager.Despawn(gameObject);
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        // 생성 주체와의 충돌은 무시
-        if (collision.gameObject == owner) return;
+        // 서버에서만 충돌 처리
+        if (!IsServer) return;
+        
+        GameObject hitObject = collision.gameObject;
+        GameObject ownerGameObject = GetOwnerGameObject();
+        
+        // ✅ Owner와의 충돌 무시
+        if (ownerGameObject != null && hitObject == ownerGameObject)
+        {
+            return;
+        }
 
-        string tag = collision.gameObject.tag;
+        string tag = hitObject.tag;
 
         switch (tag)
         {
             case "Enemy":
             case "Player":
-                // State 컴포넌트를 통해 데미지 처리
-                State targetState = collision.GetComponent<State>();
-                if (targetState != null)
+                // ✅ 서버에서만 실제 데미지 처리
+                if (damage > 0)
                 {
-                    // 총알의 이동 방향을 hitDirection으로 전달
-                    Vector2 hitDirection = rb.linearVelocity.normalized;
-                    targetState.TakeDamage(damage, hitDirection);
+                    ApplyDamage(hitObject, collision.ClosestPoint(transform.position));
                 }
-                Destroy(gameObject);
+                
+                // 총알 제거
+                DestroyBullet();
                 break;
 
             case "Wall":
-                Destroy(gameObject);
+                // 벽 충돌 시 총알 제거
+                ShowHitEffect(collision.ClosestPoint(transform.position));
+                DestroyBullet();
                 break;
+        }
+    }
+    
+    private void ApplyDamage(GameObject target, Vector3 hitPoint)
+    {
+        if (!IsServer) return;
+        
+        Vector2 hitDirection = rb.linearVelocity.normalized;
+        
+        // ✅ NetworkConnection 정보와 함께 데미지 처리
+        AgentNetworkSync agentSync = target.GetComponent<AgentNetworkSync>();
+        if (agentSync != null)
+        {
+            agentSync.RequestTakeDamage(damage, hitDirection, ownerConnection);
+            Debug.Log($"[{gameObject.name}] {target.name}에게 {damage} 데미지 (공격자: {ownerConnection?.ClientId})");
+        }
+        else
+        {
+            // 기존 방식으로 폴백 (네트워크 동기화가 없는 경우)
+            State targetState = target.GetComponent<State>();
+            if (targetState != null)
+            {
+                targetState.TakeDamage(damage, hitDirection);
+            }
+        }
+        
+        // 히트 이펙트 표시
+        ShowHitEffect(hitPoint);
+    }
+    
+    private void DestroyBullet()
+    {
+        if (IsServer)
+        {
+            ServerManager.Despawn(gameObject);
+        }
+    }
+    
+    [ObserversRpc]
+    private void ShowHitEffect(Vector3 position)
+    {
+        PlayHitEffect(position);
+    }
+    
+    // 충돌 시 시각/음향 효과
+    private void PlayHitEffect(Vector3 position)
+    {
+        Debug.Log($"[{gameObject.name}] 충돌 효과 재생: {position}");
+        
+        // TODO: 충돌 파티클, 사운드 등 구현
+        // ParticleSystem hitEffect = GetComponent<ParticleSystem>();
+        // if (hitEffect != null) 
+        // {
+        //     hitEffect.transform.position = position;
+        //     hitEffect.Play();
+        // }
+        
+        // AudioSource.PlayClipAtPoint(hitSound, position);
+    }
+    
+    // ✅ 디버그 정보
+    private void OnValidate()
+    {
+        if (Application.isPlaying && ownerConnection != null)
+        {
+            Debug.Log($"[{gameObject.name}] Owner: {ownerConnection.ClientId}, Damage: {damage}, Lifetime: {lifetime}");
         }
     }
 } 

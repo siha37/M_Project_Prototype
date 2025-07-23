@@ -11,40 +11,34 @@ public class AgentState : State
     public const float bulletMaxCount = 10f;
 
     public float bulletCurrentCount;
-    private AgentUI agentUI;
+    // ✅ AgentUI 참조 제거 (NetworkSync에서 처리)
 
     protected override void Start()
     {
         base.Start();
         bulletCurrentCount = bulletMaxCount;
-
-        // AgentUI 초기화
-        agentUI = GetComponent<AgentUI>();
-        if (agentUI != null)
-        {
-            agentUI.InitializeUI(currentHp, maxHp, (int)bulletCurrentCount, (int)bulletMaxCount);
-        }
+        
+        // ✅ UI 초기화는 NetworkSync에서 처리
     }
 
+    // ✅ UI 업데이트 완전 제거, 순수 데미지 계산만
     public override void TakeDamage(float damage, Vector2 hitDirection = default)
     {
-        base.TakeDamage(damage, hitDirection);
+        if (isDead) return;
         
-        // 체력 UI 업데이트
-        if (agentUI != null)
+        currentHp -= damage;
+        currentHp = Mathf.Clamp(currentHp, 0, maxHp);
+        
+        if (currentHp <= 0)
         {
-            agentUI.UpdateHealthUI(currentHp, maxHp);
+            isDead = true;
         }
     }
 
+    // ✅ UI 업데이트 완전 제거, 순수 탄약 계산만
     public void UpdateBulletCount(float count)
     {
         bulletCurrentCount += count;
         bulletCurrentCount = Mathf.Clamp(bulletCurrentCount, 0, bulletMaxCount);
-        // 탄약 UI 업데이트
-        if (agentUI)
-        {
-            agentUI.UpdateAmmoUI((int)bulletCurrentCount, (int)bulletMaxCount);
-        }
     }
 }

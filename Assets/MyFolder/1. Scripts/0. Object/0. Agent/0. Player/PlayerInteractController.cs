@@ -74,13 +74,27 @@ public class PlayerInteractController : MonoBehaviour
                 PlayerState playerState = currentInteractableObject.GetComponent<PlayerState>();
                 if (playerState != null && playerState.IsDead)
                 {
-                    // 이전 부활 코루틴이 있다면 중지
-                    if (reviveCoroutine != null)
+                    // 네트워크 동기화된 부활 처리
+                    PlayerNetworkSync targetNetworkSync = currentInteractableObject.GetComponent<PlayerNetworkSync>();
+                    if (targetNetworkSync != null)
                     {
-                        StopCoroutine(reviveCoroutine);
+                        // 이전 부활 코루틴이 있다면 중지
+                        if (reviveCoroutine != null)
+                        {
+                            StopCoroutine(reviveCoroutine);
+                        }
+                        // 새로운 부활 처리 시작
+                        reviveCoroutine = StartCoroutine(RevivePlayerNetwork(targetNetworkSync));
                     }
-                    // 새로운 부활 처리 시작
-                    reviveCoroutine = StartCoroutine(RevivePlayer(playerState));
+                    else
+                    {
+                        // 폴백: 기존 방식
+                        if (reviveCoroutine != null)
+                        {
+                            StopCoroutine(reviveCoroutine);
+                        }
+                        reviveCoroutine = StartCoroutine(RevivePlayer(playerState));
+                    }
                 }
             }
         }
@@ -101,6 +115,25 @@ public class PlayerInteractController : MonoBehaviour
 
         // 부활 처리
         playerState.Revive();
+        agentUI.EndReviveUI();
+        reviveCoroutine = null;
+    }
+    
+    private IEnumerator RevivePlayerNetwork(PlayerNetworkSync targetNetworkSync)
+    {
+        float elapsedTime = 0f;
+        agentUI.StartReviveUI();
+
+        while (elapsedTime < PlayerState.reviveDelay)
+        {
+            elapsedTime += Time.deltaTime;
+            float progress = elapsedTime / PlayerState.reviveDelay;
+            agentUI.UpdateReviveProgress(progress);
+            yield return null;
+        }
+
+        // 네트워크 동기화된 부활 처리
+        targetNetworkSync.RequestRevive();
         agentUI.EndReviveUI();
         reviveCoroutine = null;
     }

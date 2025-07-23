@@ -5,7 +5,7 @@ public class State : MonoBehaviour
 {
     public const float maxHp = 100f;
     public float currentHp;
-    protected bool isDead = false;
+    public bool isDead = false;
 
     public bool IsDead => isDead;
     protected virtual void Start()

@@ -26,6 +26,7 @@ public class PlayerState : AgentState
         }
     }
 
+    // ✅ UI 업데이트 로직 제거, 순수 데미지 계산만
     public override void TakeDamage(float damage, Vector2 hitDirection)
     {
         if (isDead) return;
@@ -47,7 +48,9 @@ public class PlayerState : AgentState
             }
         }
         
-        base.TakeDamage(damage);
+        // ✅ 기본 데미지 처리만 수행 (UI 업데이트 제거)
+        currentHp -= damage;
+        currentHp = Mathf.Clamp(currentHp, 0, maxHp);
         
         if (currentHp <= 0)
         {
