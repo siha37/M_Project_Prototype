@@ -4,6 +4,8 @@ using TMPro;
 
 public class AgentUI : MonoBehaviour
 {
+    [Header("Canvas")]
+    [SerializeField] private GameObject canvas;
     [Header("체력바")]
     [SerializeField] private Image frontHealthBar;
     [SerializeField] private Image secondaryHealthBar;
@@ -95,8 +97,14 @@ public class AgentUI : MonoBehaviour
     }
 
     // UI 초기화 함수
-    public void InitializeUI(float initialHealth, float maxHealth, int initialAmmo, int maxAmmo)
+    public void InitializeUI(float initialHealth, float maxHealth, int initialAmmo, int maxAmmo,bool isOwner)
     {
+        if (!isOwner)
+        {
+            canvas.SetActive(false);
+            return;
+        }
+        canvas.gameObject.SetActive(true);
         UpdateHealthUI(initialHealth, maxHealth);
         UpdateAmmoUI(initialAmmo, maxAmmo);
     }

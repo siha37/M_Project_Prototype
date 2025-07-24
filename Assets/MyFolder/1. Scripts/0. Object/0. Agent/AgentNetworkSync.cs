@@ -94,7 +94,6 @@ public class AgentNetworkSync : NetworkBehaviour
         agentState = GetComponent<AgentState>();
         agentUI = GetComponent<AgentUI>();
         agentTransform = transform;
-        
         if (agentState == null)
         {
             Debug.LogError($"[{gameObject.name}] AgentState 컴포넌트를 찾을 수 없습니다.");
@@ -103,6 +102,10 @@ public class AgentNetworkSync : NetworkBehaviour
         if (agentUI == null)
         {
             Debug.LogWarning($"[{gameObject.name}] AgentUI 컴포넌트를 찾을 수 없습니다.");
+        }
+        else
+        {
+            agentUI.InitializeUI(AgentState.maxHp, AgentState.maxHp, (int)AgentState.bulletMaxCount, (int)AgentState.bulletMaxCount,IsOwner);
         }
     }
     
@@ -116,11 +119,6 @@ public class AgentNetworkSync : NetworkBehaviour
             syncIsReloading.Value = false;
             syncLookAngle.Value = 0f;
             
-            // ✅ UI 초기화
-            if (agentUI != null)
-            {
-                agentUI.InitializeUI(AgentState.maxHp, AgentState.maxHp, (int)AgentState.bulletMaxCount, (int)AgentState.bulletMaxCount);
-            }
         }
     }
     
@@ -166,11 +164,9 @@ public class AgentNetworkSync : NetworkBehaviour
         }
     }
     
-    // 공통 탄약 처리
-    [ServerRpc]
-    public virtual void RequestUpdateBulletCount(float count)
+    public void RequestUpdateBulletCount(float count)
     {
-        if (agentState != null)
+        if (agentState)
         {
             Debug.Log($"[{gameObject.name}] 서버에서 탄약 업데이트: {count}");
             
@@ -261,14 +257,14 @@ public class AgentNetworkSync : NetworkBehaviour
     }
     
     // SyncVar 변경 시 호출되는 메서드들
-    protected virtual void OnCurrentHpChanged(float oldValue, float newValue, bool asServer)
+    protected void OnCurrentHpChanged(float oldValue, float newValue, bool asServer)
     {
-        if (agentState != null)
+        if (agentState)
         {
             agentState.currentHp = newValue;
             
             // ✅ AgentUI로 직접 업데이트
-            if (agentUI != null)
+            if (agentUI)
             {
                 agentUI.UpdateHealthUI(newValue, AgentState.maxHp);
             }
@@ -279,16 +275,16 @@ public class AgentNetworkSync : NetworkBehaviour
         }
     }
     
-    protected virtual void OnBulletCountChanged(float oldValue, float newValue, bool asServer)
+    protected void OnBulletCountChanged(float oldValue, float newValue, bool asServer)
     {
-        if (agentState != null)
+        if (agentState)
         {
             agentState.bulletCurrentCount = newValue;
             
             // ✅ AgentUI로 직접 업데이트
-            if (agentUI != null)
+            if (agentUI)
             {
-                agentUI.UpdateAmmoUI((int)newValue, (int)AgentState.bulletMaxCount);
+                agentUI.UpdateAmmoUI((int) agentState.bulletCurrentCount, (int)AgentState.bulletMaxCount);
             }
             
 #if UNITY_EDITOR

@@ -1,28 +1,35 @@
+using Unity.Cinemachine;
 using UnityEngine;
 
 public class CameraFollow : MonoBehaviour
 {
-    [SerializeField] private Transform target;        // 따라갈 타겟
-    [SerializeField] private float smoothSpeed = 5f;  // 카메라 이동 속도
-    [SerializeField] private Vector3 offset;         // 카메라와 타겟 사이의 거리
-
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    [SerializeField] private CinemachineCamera _camera;
+    
     void Start()
     {
-        
+        if(_camera == null)
+            _camera = FindFirstObjectByType<CinemachineCamera>();
+        FindAndSetOwnerPlayer();
     }
-
-    private void LateUpdate()
+    
+    private void FindAndSetOwnerPlayer()
     {
-        if (target == null) return;
-
-        // 목표 위치 계산
-        Vector3 desiredPosition = target.position + offset;
+        PlayerNetworkSync[] allPlayers = FindObjectsByType<PlayerNetworkSync>(FindObjectsSortMode.None);
         
-        // 부드러운 이동을 위한 Lerp 사용
-        Vector3 smoothedPosition = Vector3.Lerp(transform.position, desiredPosition, smoothSpeed * Time.deltaTime);
+        foreach (PlayerNetworkSync player in allPlayers)
+        {
+            if (player.IsOwner)
+            {
+                if (_camera != null)
+                {
+                    _camera.Follow = player.transform;
+                    Debug.Log($"Cinemachine 타겟 설정: {player.gameObject.name}");
+                }
+                return;
+            }
+        }
         
-        // 카메라 위치 업데이트
-        transform.position = smoothedPosition;
+        // 플레이어를 찾지 못했으면 1초 후 재시도
+        Invoke("FindAndSetOwnerPlayer", 1);
     }
 }

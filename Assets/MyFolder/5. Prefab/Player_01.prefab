@@ -461,6 +461,10 @@ MonoBehaviour:
   _componentIndexCache: 2
   _addedNetworkObject: {fileID: -3747450574471003315}
   _networkObjectCache: {fileID: -3747450574471003315}
+  gamepadDeadzone: 0.15
+  lookSensitivity: 1
+  lookSmoothing: 10
+  enableLookSmoothing: 0
   shotPivot: {fileID: 4854400107744536206}
   shotPoint: {fileID: 9182083990198720136}
   bulletPrefab: {fileID: 3866963951463671101, guid: 77bfba42c2ec86d4398542be0eb7d82a, type: 3}
@@ -477,6 +481,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e81f35df89504a54092257193a304ecb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  canvas: {fileID: 7425813101819215635}
   frontHealthBar: {fileID: 2731889702467687507}
   secondaryHealthBar: {fileID: 3962707442097301237}
   healthBarLerpSpeed: 5
@@ -526,6 +531,10 @@ MonoBehaviour:
   _componentIndexCache: 255
   _addedNetworkObject: {fileID: -3747450574471003315}
   _networkObjectCache: {fileID: 0}
+  bulletPrefab: {fileID: 0}
+  bulletSpeed: 15
+  bulletLifetime: 5
+  rotationLerpSpeed: 20
 --- !u!1 &4855864271696374617
 GameObject:
   m_ObjectHideFlags: 0

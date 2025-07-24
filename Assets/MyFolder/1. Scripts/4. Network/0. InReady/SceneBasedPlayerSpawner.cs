@@ -13,6 +13,7 @@ namespace MyFolder._1._Scripts._4._Network._0._InReady
     public class SceneBasedPlayerSpawner : MonoBehaviour
     {
         [SerializeField] private GameObject playerPrefab;
+        [SerializeField] private GameObject spawnParent;
         [SerializeField] private Transform[] spawnPoints;
 
         private NetworkManager networkManager;
@@ -179,10 +180,14 @@ namespace MyFolder._1._Scripts._4._Network._0._InReady
             Vector3 spawnPos = GetRandomSpawnPoint();
             
             // 일반 Instantiate 사용 (Object Pooling 비활성화)
-            GameObject playerObj = Instantiate(playerPrefab, spawnPos, Quaternion.identity);
+            GameObject playerObj;
+            if(spawnParent)
+                playerObj = Instantiate(playerPrefab, spawnPos, Quaternion.identity,spawnParent.transform);
+            else
+                playerObj = Instantiate(playerPrefab, spawnPos, Quaternion.identity);
             NetworkObject player = playerObj.GetComponent<NetworkObject>();
             
-            if (player == null)
+            if (!player)
             {
                 Debug.LogError("[SceneBasedPlayerSpawner] Player Prefab에 NetworkObject 컴포넌트가 없습니다!");
                 Destroy(playerObj);

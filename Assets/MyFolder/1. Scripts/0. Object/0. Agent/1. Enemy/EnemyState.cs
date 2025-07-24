@@ -50,10 +50,10 @@ public class EnemyState : AgentState
             navMeshAgent.enabled = false;
         }
 
-        // EnemyManager에 적 제거 알림
-        if (EnemyManager.Instance != null)
+        // NetworkEnemyManager에 적 제거 알림
+        if (NetworkEnemyManager.Instance != null)
         {
-            EnemyManager.Instance.RemoveEnemy();
+            NetworkEnemyManager.Instance.RemoveEnemy();
         }
 
         // 사망 시퀀스 시작

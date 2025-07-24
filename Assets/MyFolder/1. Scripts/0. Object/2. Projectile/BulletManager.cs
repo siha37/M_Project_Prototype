@@ -10,6 +10,7 @@ public class BulletManager : NetworkBehaviour
     
     [Header("Bullet Pool Settings")]
     [SerializeField] private GameObject bulletPrefab;
+    [SerializeField] private GameObject bulletsParent;
     [SerializeField] private int initialPoolSize = 100;
     [SerializeField] private int expandSize = 50;           // 확장 시 추가할 개수
     [SerializeField] private int maxPoolSize = 500;         // 최대 풀 크기
@@ -24,6 +25,10 @@ public class BulletManager : NetworkBehaviour
     // ✅ 성능 최적화: HashSet과 List 병용
     private HashSet<GameObject> activeVisualBulletsSet = new HashSet<GameObject>();
     private List<GameObject> activeVisualBullets = new List<GameObject>(); // 순회 및 디버깅용
+    
+    // ✅ ID 기반 시각 총알 관리 추가
+    private Dictionary<uint, GameObject> visualBulletsById = new Dictionary<uint, GameObject>();
+    private Dictionary<uint, Coroutine> bulletCoroutines = new Dictionary<uint, Coroutine>();
     
     public override void OnStartServer()
     {
@@ -101,7 +106,11 @@ public class BulletManager : NetworkBehaviour
     
     private void CreateVisualBulletPoolObject()
     {
-        GameObject bullet = Instantiate(bulletPrefab);
+        GameObject bullet;
+        if(bulletsParent)
+            bullet = Instantiate(bulletPrefab,bulletsParent.transform);
+        else
+            bullet = Instantiate(bulletPrefab);
         bullet.SetActive(false);
         
         // 시각 전용 설정
@@ -157,8 +166,8 @@ public class BulletManager : NetworkBehaviour
             bullet.InitializeWithConnection(startPos, angle, speed, damage, lifetime, shooter);
             activeBullets.Add(bullet);
             
-            // 모든 클라이언트에 시각 총알 생성 요청
-            CreateVisualBulletRpc(startPos, angle, speed, lifetime);
+            // ✅ bulletId 포함하여 시각 총알 생성 요청
+            CreateVisualBulletRpc(startPos, angle, speed, lifetime, bullet.bulletId);
         }
         else
         {
@@ -172,7 +181,7 @@ public class BulletManager : NetworkBehaviour
                 bullet.InitializeWithConnection(startPos, angle, speed, damage, lifetime, shooter);
                 activeBullets.Add(bullet);
                 
-                CreateVisualBulletRpc(startPos, angle, speed, lifetime);
+                CreateVisualBulletRpc(startPos, angle, speed, lifetime, bullet.bulletId);
                 Debug.Log($"[BulletManager] 풀 확장 후 서버 총알 발사: {activeBullets.Count}개 활성");
             }
             else
@@ -182,9 +191,9 @@ public class BulletManager : NetworkBehaviour
         }
     }
     
-    // 모든 클라이언트에서 시각 총알 생성
+    // ✅ bulletId 파라미터 추가
     [ObserversRpc]
-    private void CreateVisualBulletRpc(Vector3 startPos, float angle, float speed, float lifetime)
+    private void CreateVisualBulletRpc(Vector3 startPos, float angle, float speed, float lifetime, uint bulletId)
     {
         // ✅ Host 모드 지원: 서버도 시각 총알 생성 (Host일 때 시각적 표현 필요)
         
@@ -195,13 +204,16 @@ public class BulletManager : NetworkBehaviour
             visualBullet.transform.rotation = Quaternion.Euler(0, 0, angle);
             visualBullet.SetActive(true);
             
-            // 시각 총알 이동
-            StartCoroutine(MoveVisualBulletWithPhysics(visualBullet, speed, lifetime));
+            // ✅ ID로 매칭 저장
+            visualBulletsById[bulletId] = visualBullet;
+            Coroutine moveCoroutine = StartCoroutine(MoveVisualBulletWithPhysics(visualBullet, speed, lifetime, bulletId));
+            bulletCoroutines[bulletId] = moveCoroutine;
+            
             activeVisualBulletsSet.Add(visualBullet); // HashSet에 추가
             activeVisualBullets.Add(visualBullet); // List에 추가 (순회용)
             
             string roleText = IsServer ? "(Host/Server)" : "(Client)";
-            Debug.Log($"[BulletManager] 시각 총알 생성 {roleText}: {activeVisualBullets.Count}개 활성");
+            Debug.Log($"[BulletManager] 시각 총알 생성 {roleText} ID:{bulletId}: {activeVisualBullets.Count}개 활성");
         }
         else
         {
@@ -216,11 +228,14 @@ public class BulletManager : NetworkBehaviour
                 visualBullet.transform.rotation = Quaternion.Euler(0, 0, angle);
                 visualBullet.SetActive(true);
                 
-                StartCoroutine(MoveVisualBulletWithPhysics(visualBullet, speed, lifetime));
+                visualBulletsById[bulletId] = visualBullet;
+                Coroutine moveCoroutine = StartCoroutine(MoveVisualBulletWithPhysics(visualBullet, speed, lifetime, bulletId));
+                bulletCoroutines[bulletId] = moveCoroutine;
+                
                 activeVisualBulletsSet.Add(visualBullet); // HashSet에 추가
                 activeVisualBullets.Add(visualBullet); // List에 추가 (순회용)
                 string roleText = IsServer ? "(Host/Server)" : "(Client)";
-                Debug.Log($"[BulletManager] 풀 확장 후 시각 총알 생성 {roleText}: {activeVisualBullets.Count}개 활성");
+                Debug.Log($"[BulletManager] 풀 확장 후 시각 총알 생성 {roleText} ID:{bulletId}: {activeVisualBullets.Count}개 활성");
             }
             else
             {
@@ -229,8 +244,8 @@ public class BulletManager : NetworkBehaviour
         }
     }
     
-    // ✅ 서버 총알과 동일한 물리 적용
-    private System.Collections.IEnumerator MoveVisualBulletWithPhysics(GameObject bullet, float speed, float lifetime)
+    // ✅ bulletId 파라미터 추가된 시각 총알 이동
+    private System.Collections.IEnumerator MoveVisualBulletWithPhysics(GameObject bullet, float speed, float lifetime, uint bulletId)
     {
         Vector3 direction = bullet.transform.right;
         float elapsed = 0f;
@@ -251,8 +266,28 @@ public class BulletManager : NetworkBehaviour
             yield return null;
         }
         
-        // 시각 총알 반납
-        ReturnVisualBullet(bullet);
+        // ✅ ID 기반 정리
+        ReturnVisualBulletById(bulletId);
+    }
+    
+    // ✅ ID 기반 시각 총알 반납
+    private void ReturnVisualBulletById(uint bulletId)
+    {
+        if (visualBulletsById.TryGetValue(bulletId, out GameObject bullet))
+        {
+            // Dictionary에서 제거
+            visualBulletsById.Remove(bulletId);
+            bulletCoroutines.Remove(bulletId);
+            
+            // 기존 컬렉션에서 제거
+            if (activeVisualBulletsSet.Contains(bullet))
+            {
+                activeVisualBulletsSet.Remove(bullet);
+                activeVisualBullets.Remove(bullet);
+                bullet.SetActive(false);
+                visualBulletPool.Enqueue(bullet);
+            }
+        }
     }
     
     private void ReturnVisualBullet(GameObject bullet)
@@ -291,18 +326,48 @@ public class BulletManager : NetworkBehaviour
             }
         }
         
-        // 모든 클라이언트에 충돌 효과 전송
-        ShowBulletHitEffect(bullet.position, target.transform.position);
+        // ✅ bulletId 포함하여 충돌 효과 전송
+        ShowBulletHitEffect(bullet.position, target.transform.position, bullet.bulletId);
         
         // 총알 반납
         ReturnServerBullet(bullet);
     }
     
+    // ✅ bulletId로 정확한 시각 총알 삭제
     [ObserversRpc]
-    private void ShowBulletHitEffect(Vector3 bulletPos, Vector3 hitPos)
+    private void ShowBulletHitEffect(Vector3 bulletPos, Vector3 hitPos, uint bulletId)
+    {
+        // 정확한 총알 찾기 및 삭제
+        if (visualBulletsById.TryGetValue(bulletId, out GameObject targetBullet))
+        {
+            // 코루틴 정지
+            if (bulletCoroutines.TryGetValue(bulletId, out Coroutine coroutine))
+            {
+                StopCoroutine(coroutine);
+            }
+            
+            // 총알 반납
+            ReturnVisualBulletById(bulletId);
+            
+            Debug.Log($"[BulletManager] 시각 총알 충돌 삭제 ID:{bulletId}");
+        }
+        else
+        {
+            Debug.LogWarning($"[BulletManager] 시각 총알을 찾을 수 없음 ID:{bulletId}");
+        }
+        
+        // 충돌 효과 표시
+        PlayHitEffect(bulletPos, hitPos);
+    }
+    
+    // ✅ 충돌 효과 재생 (별도 메서드)
+    private void PlayHitEffect(Vector3 bulletPos, Vector3 hitPos)
     {
         Debug.Log($"[BulletManager] 총알 충돌 효과: {bulletPos} -> {hitPos}");
         // TODO: 파티클, 사운드 등 충돌 효과 구현
+        // ParticleSystem hitEffect = GetHitEffect(hitPos);
+        // if (hitEffect != null) hitEffect.Play();
+        // AudioSource.PlayClipAtPoint(hitSound, hitPos);
     }
     
     private void ReturnServerBullet(ServerBullet bullet)
@@ -388,33 +453,65 @@ public class BulletManager : NetworkBehaviour
         }
     }
     
-    // ✅ 풀 상태 실시간 모니터링
+    // ✅ 풀 상태 실시간 모니터링 (통합된 방식)
     [System.Serializable]
     public class PoolDebugInfo
     {
-        public int serverActive;
-        public int serverPooled;
-        public int clientActive; 
-        public int clientPooled;
-        public float serverUtilization;
-        public float clientUtilization;
-        public int totalServerBullets;
-        public int totalClientBullets;
+        public string role;              // "Host", "Client"  
+        public int activeBullets;        // 현재 활성 총알 수
+        public int pooledBullets;        // 풀에 있는 총알 수
+        public int totalBullets;         // 총 총알 수
+        public float utilization;        // 사용률
+        
+        // 호스트용 상세 정보 (디버깅용)
+        public int serverLogicBullets;   // 서버 연산 총알 (호스트만)
+        public int visualBullets;        // 시각 총알
+        
+        public override string ToString()
+        {
+            if (role == "Host")
+            {
+                return $"{role}: Active {activeBullets}, Pooled {pooledBullets}, Total {totalBullets}/500 ({utilization:P1}) [Logic:{serverLogicBullets}, Visual:{visualBullets}]";
+            }
+            else
+            {
+                return $"{role}: Active {activeBullets}, Pooled {pooledBullets}, Total {totalBullets}/500 ({utilization:P1})";
+            }
+        }
     }
 
     public PoolDebugInfo GetDebugInfo()
     {
-        return new PoolDebugInfo
+        if (IsServer) // 호스트
         {
-            serverActive = activeBullets.Count,
-            serverPooled = bulletPool.Count,
-            clientActive = activeVisualBullets.Count,
-            clientPooled = visualBulletPool.Count,
-            serverUtilization = (float)activeBullets.Count / maxPoolSize,
-            clientUtilization = (float)activeVisualBullets.Count / maxPoolSize,
-            totalServerBullets = activeBullets.Count + bulletPool.Count,
-            totalClientBullets = activeVisualBullets.Count + visualBulletPool.Count
-        };
+            return new PoolDebugInfo
+            {
+                role = "Host",
+                activeBullets = activeBullets.Count,  // 메인은 연산 총알
+                pooledBullets = bulletPool.Count,
+                totalBullets = activeBullets.Count + bulletPool.Count,
+                utilization = (float)activeBullets.Count / maxPoolSize,
+                
+                // 상세 정보
+                serverLogicBullets = activeBullets.Count,
+                visualBullets = activeVisualBullets.Count
+            };
+        }
+        else // 게스트
+        {
+            return new PoolDebugInfo
+            {
+                role = "Client",
+                activeBullets = activeVisualBullets.Count,  // 메인은 시각 총알
+                pooledBullets = visualBulletPool.Count,
+                totalBullets = activeVisualBullets.Count + visualBulletPool.Count,
+                utilization = (float)activeVisualBullets.Count / maxPoolSize,
+                
+                // 상세 정보 (게스트에서는 의미 없으므로 0)
+                serverLogicBullets = 0,
+                visualBullets = activeVisualBullets.Count
+            };
+        }
     }
     
     // ✅ 인스펙터에서 실시간 확인 가능
@@ -423,10 +520,8 @@ public class BulletManager : NetworkBehaviour
     
     private void LateUpdate()
     {
-        // ✅ 매 프레임 디버그 정보 업데이트 (에디터에서만)
-        #if UNITY_EDITOR
+        // ✅ 매 프레임 디버그 정보 업데이트 (모든 환경에서)
         debugInfo = GetDebugInfo();
-        #endif
     }
 }
 
@@ -434,6 +529,7 @@ public class BulletManager : NetworkBehaviour
 [System.Serializable]
 public class ServerBullet
 {
+    public uint bulletId;           // ✅ 고유 ID 추가
     public Vector3 position;
     public Vector3 direction;
     public float speed;
@@ -442,8 +538,11 @@ public class ServerBullet
     public float elapsed;
     public uint ownerNetworkId;
     
+    private static uint nextBulletId = 1; // ✅ 고유 ID 생성기
+    
     public void Initialize(Vector3 startPos, float angle, float speed, float damage, float lifetime, uint ownerNetworkId)
     {
+        this.bulletId = nextBulletId++; // ✅ 고유 ID 할당
         this.position = startPos;
         this.direction = new Vector3(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad), 0);
         this.speed = speed;
@@ -456,6 +555,7 @@ public class ServerBullet
     // ✅ FishNet 공식 권장: NetworkConnection에서 안전하게 Owner ID 추출
     public void InitializeWithConnection(Vector3 startPos, float angle, float speed, float damage, float lifetime, NetworkConnection shooter)
     {
+        this.bulletId = nextBulletId++; // ✅ 고유 ID 할당
         this.position = startPos;
         this.direction = new Vector3(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad), 0);
         this.speed = speed;
@@ -479,7 +579,7 @@ public class ServerBullet
     private void CheckCollisions()
     {
         // ✅ 레이어 필터링과 Owner 체크 추가
-        LayerMask targetLayers = LayerMask.GetMask("Player", "Enemy", "Wall");
+        LayerMask targetLayers = LayerMask.GetMask("Agent", "Wall");
         Collider2D hit = Physics2D.OverlapCircle(position, 0.1f, targetLayers);
         
         if (hit != null)
@@ -529,6 +629,7 @@ public class ServerBullet
     
     public void Reset()
     {
+        bulletId = 0;               // ✅ ID 초기화 추가
         position = Vector3.zero;
         direction = Vector3.zero;
         speed = 0f;

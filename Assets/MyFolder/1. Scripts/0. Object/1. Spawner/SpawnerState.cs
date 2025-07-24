@@ -15,8 +15,8 @@ public class SpawnerState : State
         
         if (currentHp <= 0)
         {
-            // EnemyManager의 최대 적 수량 감소
-            EnemyManager.Instance.RemoveSpawner();
+            // NetworkEnemyManager의 최대 적 수량 감소
+            NetworkEnemyManager.Instance.RemoveSpawner();
             
             // 사망 시퀀스 시작
             StartCoroutine(DeathSequence());
