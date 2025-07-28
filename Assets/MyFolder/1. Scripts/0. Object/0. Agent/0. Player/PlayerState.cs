@@ -44,7 +44,7 @@ public class PlayerState : AgentState
             if (angleDifference >= 135f)
             {
                 damage *= 2f;
-                Debug.Log($"[{gameObject.name}] 후방 피해! 데미지 2배 증폭: {damage}");
+                LogManager.Log(LogCategory.Player, $"{gameObject.name} 후방 피해! 데미지 2배 증폭: {damage}", this);
             }
         }
         

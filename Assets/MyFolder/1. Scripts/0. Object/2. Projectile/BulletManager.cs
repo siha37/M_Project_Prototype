@@ -36,11 +36,11 @@ public class BulletManager : NetworkBehaviour
         {
             Instance = this;
             InitializeServerPool();
-            Debug.Log("[BulletManager] 서버 초기화 완료 - 발사 준비됨");
+            LogManager.Log(LogCategory.Projectile, "BulletManager 서버 초기화 완료 - 발사 준비됨", this);
         }
         else
         {
-            Debug.LogWarning("[BulletManager] 서버 인스턴스가 이미 존재합니다.");
+                            LogManager.LogWarning(LogCategory.Projectile, "BulletManager 서버 인스턴스가 이미 존재합니다.", this);
         }
     }
     
@@ -49,12 +49,12 @@ public class BulletManager : NetworkBehaviour
         if (Instance == null)
         {
             Instance = this;
-            Debug.Log("[BulletManager] 클라이언트 인스턴스 설정됨");
+            LogManager.Log(LogCategory.Projectile, "BulletManager 클라이언트 인스턴스 설정됨", this);
         }
         
         // ✅ Host 모드 지원: 서버에서도 시각 풀 초기화 (Host일 때 시각적 표현 필요)
         InitializeVisualPool();
-        Debug.Log("[BulletManager] 시각 풀 초기화 완료 (Host 모드 지원)");
+        LogManager.Log(LogCategory.Projectile, "BulletManager 시각 풀 초기화 완료 (Host 모드 지원)", this);
     }
     
     private void InitializeServerPool()
@@ -64,7 +64,7 @@ public class BulletManager : NetworkBehaviour
             ServerBullet bullet = new ServerBullet();
             bulletPool.Enqueue(bullet);
         }
-        Debug.Log($"[BulletManager] 서버 총알 풀 초기화: {initialPoolSize}개");
+        LogManager.Log(LogCategory.Projectile, $"BulletManager 서버 총알 풀 초기화: {initialPoolSize}개", this);
     }
     
     // 서버 풀 동적 확장
@@ -72,14 +72,14 @@ public class BulletManager : NetworkBehaviour
     {
         if (!enableDynamicExpansion)
         {
-            Debug.LogWarning("[BulletManager] 동적 확장이 비활성화되어 있습니다.");
+            LogManager.LogWarning(LogCategory.Projectile, "BulletManager 동적 확장이 비활성화되어 있습니다.", this);
             return false;
         }
         
         int currentTotalSize = bulletPool.Count + activeBullets.Count;
         if (currentTotalSize >= maxPoolSize)
         {
-            Debug.LogError($"[BulletManager] 최대 풀 크기 도달: {maxPoolSize}개");
+            LogManager.LogError(LogCategory.Projectile, $"BulletManager 최대 풀 크기 도달: {maxPoolSize}개", this);
             return false;
         }
         
@@ -91,7 +91,7 @@ public class BulletManager : NetworkBehaviour
             bulletPool.Enqueue(bullet);
         }
         
-        Debug.Log($"[BulletManager] 서버 풀 확장: +{actualExpandSize}개 (총 {currentTotalSize + actualExpandSize}개)");
+        LogManager.Log(LogCategory.Projectile, $"BulletManager 서버 풀 확장: +{actualExpandSize}개 (총 {currentTotalSize + actualExpandSize}개)", this);
         return true;
     }
     
@@ -101,7 +101,7 @@ public class BulletManager : NetworkBehaviour
         {
             CreateVisualBulletPoolObject();
         }
-        Debug.Log($"[BulletManager] 클라이언트 시각 풀 초기화: {initialPoolSize}개");
+        LogManager.Log(LogCategory.Projectile, $"BulletManager 클라이언트 시각 풀 초기화: {initialPoolSize}개", this);
     }
     
     private void CreateVisualBulletPoolObject()
@@ -132,14 +132,14 @@ public class BulletManager : NetworkBehaviour
     {
         if (!enableDynamicExpansion)
         {
-            Debug.LogWarning("[BulletManager] 동적 확장이 비활성화되어 있습니다.");
+            LogManager.LogWarning(LogCategory.Projectile, "BulletManager 동적 확장이 비활성화되어 있습니다.", this);
             return false;
         }
         
         int currentTotalSize = visualBulletPool.Count + activeVisualBullets.Count;
         if (currentTotalSize >= maxPoolSize)
         {
-            Debug.LogError($"[BulletManager] 최대 시각 풀 크기 도달: {maxPoolSize}개");
+            LogManager.LogError(LogCategory.Projectile, $"BulletManager 최대 시각 풀 크기 도달: {maxPoolSize}개", this);
             return false;
         }
         
@@ -150,7 +150,7 @@ public class BulletManager : NetworkBehaviour
             CreateVisualBulletPoolObject();
         }
         
-        Debug.Log($"[BulletManager] 시각 풀 확장: +{actualExpandSize}개 (총 {currentTotalSize + actualExpandSize}개)");
+        LogManager.Log(LogCategory.Projectile, $"BulletManager 시각 풀 확장: +{actualExpandSize}개 (총 {currentTotalSize + actualExpandSize}개)", this);
         return true;
     }
     
@@ -172,7 +172,7 @@ public class BulletManager : NetworkBehaviour
         else
         {
             // ✅ 풀 확장 시도
-            Debug.LogWarning("[BulletManager] 서버 총알 풀이 고갈되었습니다! 풀 확장을 시도합니다...");
+                            LogManager.LogWarning(LogCategory.Projectile, "BulletManager 서버 총알 풀이 고갈되었습니다! 풀 확장을 시도합니다...", this);
             
             if (ExpandServerPool() && bulletPool.Count > 0)
             {
@@ -182,11 +182,11 @@ public class BulletManager : NetworkBehaviour
                 activeBullets.Add(bullet);
                 
                 CreateVisualBulletRpc(startPos, angle, speed, lifetime, bullet.bulletId);
-                Debug.Log($"[BulletManager] 풀 확장 후 서버 총알 발사: {activeBullets.Count}개 활성");
+                LogManager.Log(LogCategory.Projectile, $"BulletManager 풀 확장 후 서버 총알 발사: {activeBullets.Count}개 활성", this);
             }
             else
             {
-                Debug.LogError("[BulletManager] 풀 확장 실패! 총알 발사를 취소합니다.");
+                LogManager.LogError(LogCategory.Projectile, "BulletManager 풀 확장 실패! 총알 발사를 취소합니다.", this);
             }
         }
     }
@@ -213,12 +213,12 @@ public class BulletManager : NetworkBehaviour
             activeVisualBullets.Add(visualBullet); // List에 추가 (순회용)
             
             string roleText = IsServer ? "(Host/Server)" : "(Client)";
-            Debug.Log($"[BulletManager] 시각 총알 생성 {roleText} ID:{bulletId}: {activeVisualBullets.Count}개 활성");
+            LogManager.Log(LogCategory.Projectile, $"BulletManager 시각 총알 생성 {roleText} ID:{bulletId}: {activeVisualBullets.Count}개 활성", this);
         }
         else
         {
             // ✅ 시각 풀 확장 시도
-            Debug.LogWarning("[BulletManager] 시각 총알 풀이 고갈되었습니다! 풀 확장을 시도합니다...");
+                            LogManager.LogWarning(LogCategory.Projectile, "BulletManager 시각 총알 풀이 고갈되었습니다! 풀 확장을 시도합니다...", this);
             
             if (ExpandVisualPool() && visualBulletPool.Count > 0)
             {
@@ -235,11 +235,11 @@ public class BulletManager : NetworkBehaviour
                 activeVisualBulletsSet.Add(visualBullet); // HashSet에 추가
                 activeVisualBullets.Add(visualBullet); // List에 추가 (순회용)
                 string roleText = IsServer ? "(Host/Server)" : "(Client)";
-                Debug.Log($"[BulletManager] 풀 확장 후 시각 총알 생성 {roleText} ID:{bulletId}: {activeVisualBullets.Count}개 활성");
+                LogManager.Log(LogCategory.Projectile, $"BulletManager 풀 확장 후 시각 총알 생성 {roleText} ID:{bulletId}: {activeVisualBullets.Count}개 활성", this);
             }
             else
             {
-                Debug.LogError("[BulletManager] 시각 풀 확장 실패! 시각 총알 생성을 취소합니다.");
+                LogManager.LogError(LogCategory.Projectile, "BulletManager 시각 풀 확장 실패! 시각 총알 생성을 취소합니다.", this);
             }
         }
     }
@@ -349,11 +349,11 @@ public class BulletManager : NetworkBehaviour
             // 총알 반납
             ReturnVisualBulletById(bulletId);
             
-            Debug.Log($"[BulletManager] 시각 총알 충돌 삭제 ID:{bulletId}");
+            LogManager.Log(LogCategory.Projectile, $"BulletManager 시각 총알 충돌 삭제 ID:{bulletId}", this);
         }
         else
         {
-            Debug.LogWarning($"[BulletManager] 시각 총알을 찾을 수 없음 ID:{bulletId}");
+                            LogManager.LogWarning(LogCategory.Projectile, $"BulletManager 시각 총알을 찾을 수 없음 ID:{bulletId}", this);
         }
         
         // 충돌 효과 표시
@@ -363,7 +363,7 @@ public class BulletManager : NetworkBehaviour
     // ✅ 충돌 효과 재생 (별도 메서드)
     private void PlayHitEffect(Vector3 bulletPos, Vector3 hitPos)
     {
-        Debug.Log($"[BulletManager] 총알 충돌 효과: {bulletPos} -> {hitPos}");
+        LogManager.Log(LogCategory.Projectile, $"BulletManager 총알 충돌 효과: {bulletPos} -> {hitPos}", this);
         // TODO: 파티클, 사운드 등 충돌 효과 구현
         // ParticleSystem hitEffect = GetHitEffect(hitPos);
         // if (hitEffect != null) hitEffect.Play();
@@ -402,12 +402,12 @@ public class BulletManager : NetworkBehaviour
         if (IsServer)
         {
             int totalServer = activeBullets.Count + bulletPool.Count;
-            Debug.Log($"[BulletManager] 서버 - 활성: {activeBullets.Count}, 풀: {bulletPool.Count}, 총계: {totalServer}/{maxPoolSize}");
+            LogManager.Log(LogCategory.Projectile, $"BulletManager 서버 - 활성: {activeBullets.Count}, 풀: {bulletPool.Count}, 총계: {totalServer}/{maxPoolSize}", this);
         }
         else
         {
             int totalVisual = activeVisualBullets.Count; // HashSet은 직접 크기를 가져올 수 없으므로 List 크기를 사용
-            Debug.Log($"[BulletManager] 클라이언트 - 활성: {activeVisualBullets.Count}, 풀: {visualBulletPool.Count}, 총계: {totalVisual}/{maxPoolSize}");
+            LogManager.Log(LogCategory.Projectile, $"BulletManager 클라이언트 - 활성: {activeVisualBullets.Count}, 풀: {visualBulletPool.Count}, 총계: {totalVisual}/{maxPoolSize}", this);
         }
     }
     

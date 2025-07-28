@@ -16,21 +16,21 @@ public class PlayerInteractController : MonoBehaviour
 
         if (interactArea == null)
         {
-            Debug.LogError($"[{gameObject.name}] IntractArea 컴포넌트가 없습니다.");
+            LogManager.LogError(LogCategory.Player, $"{gameObject.name} IntractArea 컴포넌트가 없습니다.", this);
             enabled = false;
             return;
         }
 
         if (playerInput == null)
         {
-            Debug.LogError($"[{gameObject.name}] PlayerInputControll 컴포넌트가 없습니다.");
+            LogManager.LogError(LogCategory.Player, $"{gameObject.name} PlayerInputControll 컴포넌트가 없습니다.", this);
             enabled = false;
             return;
         }
 
         if (agentUI == null)
         {
-            Debug.LogError($"[{gameObject.name}] AgentUI 컴포넌트가 없습니다.");
+            LogManager.LogError(LogCategory.Player, $"{gameObject.name} AgentUI 컴포넌트가 없습니다.", this);
             enabled = false;
             return;
         }

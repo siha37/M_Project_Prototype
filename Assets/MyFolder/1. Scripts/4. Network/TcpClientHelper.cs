@@ -55,7 +55,7 @@ public static class TcpClientHelper
         catch (Exception ex)
         {
             // 연결 오류 시 재연결 시도
-            Debug.LogWarning($"[TcpClientHelper] 연결 오류, 재연결 시도: {ex.Message}");
+                            LogManager.LogWarning(LogCategory.Network, $"TcpClientHelper 연결 오류, 재연결 시도: {ex.Message}");
             await DisconnectAsync();
             
             try
@@ -86,13 +86,13 @@ public static class TcpClientHelper
         }
         catch (JsonException ex)
         {
-            Debug.LogError($"[TcpClientHelper] JSON 파싱 오류: {ex.Message}");
-            Debug.LogError($"[TcpClientHelper] 파싱 시도한 응답: {response}");
+                            LogManager.LogError(LogCategory.Network, $"TcpClientHelper JSON 파싱 오류: {ex.Message}");
+                LogManager.LogError(LogCategory.Network, $"TcpClientHelper 파싱 시도한 응답: {response}");
             throw new NetworkException($"JSON 파싱 오류: {ex.Message}", ex);
         }
         catch (Exception ex)
         {
-            Debug.LogError($"[TcpClientHelper] 응답 처리 오류: {ex.Message}");
+            LogManager.LogError(LogCategory.Network, $"TcpClientHelper 응답 처리 오류: {ex.Message}");
             throw;
         }
     }
@@ -132,7 +132,7 @@ public static class TcpClientHelper
         currentServerIP = ip;
         currentServerPort = port;
         
-        Debug.Log($"[TcpClientHelper] 서버에 연결됨: {ip}:{port}");
+        LogManager.Log(LogCategory.Network, $"TcpClientHelper 서버에 연결됨: {ip}:{port}");
     }
     
     public static async Task DisconnectAsync()
@@ -152,7 +152,7 @@ public static class TcpClientHelper
             currentServerIP = "";
             currentServerPort = 0;
         }
-        Debug.Log("[TcpClientHelper] 서버 연결 해제");
+        LogManager.Log(LogCategory.Network, "TcpClientHelper 서버 연결 해제");
     }
     
     public static bool IsConnected()
@@ -209,7 +209,7 @@ public static class TcpClientHelper
         }
         catch (Exception ex)
         {
-            Debug.LogError($"압축 해제 실패: {ex.Message}");
+            LogManager.LogError(LogCategory.Network, $"압축 해제 실패: {ex.Message}");
             throw new NetworkException($"압축 해제 실패: {ex.Message}", ex);
         }
     }

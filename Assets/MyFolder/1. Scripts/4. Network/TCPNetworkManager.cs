@@ -60,7 +60,7 @@ public class TCPNetworkManager : MonoBehaviour
         roomHost = new RoomHost();
         roomGuest = new RoomGuest();
         
-        Debug.Log("NetworkManager 초기화 완료");
+        LogManager.Log(LogCategory.Network, "NetworkManager 초기화 완료", this);
     }
     
     public async Task<bool> TestConnectionAsync()
@@ -177,7 +177,7 @@ public class TCPNetworkManager : MonoBehaviour
             // 중복 참가 방지
             if (!string.IsNullOrEmpty(GetCurrentRoomId()))
             {
-                Debug.LogWarning("이미 방에 참가 중입니다. 먼저 현재 방을 나가주세요.");
+                LogManager.LogWarning(LogCategory.Network, "이미 방에 참가 중입니다. 먼저 현재 방을 나가주세요.", this);
                 return new JoinRoomResult { success = false, errorMessage = "이미 방에 참가 중입니다" };
             }
             
@@ -284,7 +284,7 @@ public class TCPNetworkManager : MonoBehaviour
         }
         catch (Exception ex)
         {
-            Debug.LogError($"하트비트 전송 오류: {ex.Message}");
+            LogManager.LogError(LogCategory.Network, $"하트비트 전송 오류: {ex.Message}", this);
             return false;
         }
     }
@@ -292,7 +292,7 @@ public class TCPNetworkManager : MonoBehaviour
     private void UpdateConnectionStatus(string status)
     {
         connectionStatus = status;
-        Debug.Log($"[NetworkManager] {status}");
+        LogManager.Log(LogCategory.Network, $"NetworkManager {status}", this);
     }
     
     public string GetCurrentRoomId()
@@ -310,7 +310,7 @@ public class TCPNetworkManager : MonoBehaviour
     private void SetSessionToken(string token)
     {
         sessionToken = token;
-        Debug.Log($"[TCPNetworkManager] 세션 토큰 저장: {token}");
+        LogManager.Log(LogCategory.Network, $"TCPNetworkManager 세션 토큰 저장: {token}", this);
     }
 
     public async Task<bool> AuthAsync(string nickname)
@@ -337,7 +337,7 @@ public class TCPNetworkManager : MonoBehaviour
                 return true;
             }
         }
-        Debug.LogError("세션 토큰 발급 실패");
+        LogManager.LogError(LogCategory.Network, "세션 토큰 발급 실패", this);
         return false;
     }
     

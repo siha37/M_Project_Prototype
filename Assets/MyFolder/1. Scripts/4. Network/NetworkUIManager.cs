@@ -227,8 +227,8 @@ public class NetworkUIManager : MonoBehaviour
             HeartbeatManager.Instance.StartHeartbeat(roomId);
             
             // 연결 상태 확인
-            Debug.Log($"[NetworkUIManager] 방 참가 후 연결 상태: {TcpClientHelper.IsConnected()}");
-            Debug.Log($"[NetworkUIManager] 하트비트 상태: {HeartbeatManager.Instance.IsHeartbeating()}");
+                    LogManager.Log(LogCategory.UI, $"NetworkUIManager 방 참가 후 연결 상태: {TcpClientHelper.IsConnected()}");
+        LogManager.Log(LogCategory.UI, $"NetworkUIManager 하트비트 상태: {HeartbeatManager.Instance.IsHeartbeating()}");
         }
         else
         {
@@ -280,7 +280,7 @@ public class NetworkUIManager : MonoBehaviour
     void OnConnectionError(NetworkError error)
     {
         UpdateStatusText($"오류: {error.message}");
-        Debug.LogError($"네트워크 오류: {error.type} - {error.message}");
+                    LogManager.LogError(LogCategory.UI, $"네트워크 오류: {error.type} - {error.message}");
     }
     
     void OnRoomCreated(string roomId)

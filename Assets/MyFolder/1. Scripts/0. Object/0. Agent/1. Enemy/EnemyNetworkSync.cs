@@ -37,17 +37,17 @@ public class EnemyNetworkSync : AgentNetworkSync
         
         if (enemyState == null)
         {
-            Debug.LogError($"[{gameObject.name}] EnemyState 컴포넌트를 찾을 수 없습니다.");
+            LogManager.LogError(LogCategory.Enemy, $"{gameObject.name} EnemyState 컴포넌트를 찾을 수 없습니다.", this);
         }
         
         if (enemyControll == null)
         {
-            Debug.LogError($"[{gameObject.name}] EnemyControll 컴포넌트를 찾을 수 없습니다.");
+            LogManager.LogError(LogCategory.Enemy, $"{gameObject.name} EnemyControll 컴포넌트를 찾을 수 없습니다.", this);
         }
         
         if (navMeshAgent == null)
         {
-            Debug.LogError($"[{gameObject.name}] NavMeshAgent 컴포넌트를 찾을 수 없습니다.");
+            LogManager.LogError(LogCategory.Enemy, $"{gameObject.name} NavMeshAgent 컴포넌트를 찾을 수 없습니다.", this);
         }
     }
     
@@ -80,7 +80,7 @@ public class EnemyNetworkSync : AgentNetworkSync
     [ServerRpc]
     public void RequestUpdateAIState(string newState, Vector3 targetPos, NetworkObject target = null)
     {
-        Debug.Log($"[{gameObject.name}] 서버에서 AI 상태 업데이트: {syncAIState.Value} -> {newState}");
+        LogManager.Log(LogCategory.Enemy, $"{gameObject.name} 서버에서 AI 상태 업데이트: {syncAIState.Value} -> {newState}", this);
         
         syncAIState.Value = newState;
         syncTargetPosition.Value = targetPos;
@@ -120,7 +120,7 @@ public class EnemyNetworkSync : AgentNetworkSync
     {
         if (syncIsReloading.Value) return;
         
-        Debug.Log($"[{gameObject.name}] 서버에서 적 재장전 시작");
+        LogManager.Log(LogCategory.Enemy, $"{gameObject.name} 서버에서 적 재장전 시작", this);
         RequestSetReloadingState(true);
         StartCoroutine(ServerEnemyReloadProcess());
     }
@@ -147,7 +147,7 @@ public class EnemyNetworkSync : AgentNetworkSync
     [ObserversRpc]
     private void OnAIStateChanged(string newState, Vector3 targetPos)
     {
-        Debug.Log($"[{gameObject.name}] AI 상태 변경: {newState}, 타겟 위치: {targetPos}");
+        LogManager.Log(LogCategory.Enemy, $"{gameObject.name} AI 상태 변경: {newState}, 타겟 위치: {targetPos}", this);
         OnEnemyStateChanged?.Invoke(newState);
     }
     
@@ -161,13 +161,13 @@ public class EnemyNetworkSync : AgentNetworkSync
     [ObserversRpc]
     private void OnEnemyReloadProgress(float progress)
     {
-        Debug.Log($"[{gameObject.name}] 적 재장전 진행률: {progress * 100:F1}%");
+                    LogManager.Log(LogCategory.Enemy, $"{gameObject.name} 적 재장전 진행률: {progress * 100:F1}%", this);
     }
     
     [ObserversRpc]
     private void OnEnemyReloadComplete()
     {
-        Debug.Log($"[{gameObject.name}] 적 재장전 완료");
+                    LogManager.Log(LogCategory.Enemy, $"{gameObject.name} 적 재장전 완료", this);
     }
     
     // SyncVar 변경 시 호출되는 메서드들
@@ -179,14 +179,14 @@ public class EnemyNetworkSync : AgentNetworkSync
             enemyControll.SetTargetPosition(newValue);
         }
 #if UNITY_EDITOR
-        Debug.Log($"[{gameObject.name}] 타겟 위치 동기화: {oldValue} -> {newValue}");
+        LogManager.Log(LogCategory.Enemy, $"{gameObject.name} 타겟 위치 동기화: {oldValue} -> {newValue}", this);
 #endif
     }
     
     private void OnIsChasingChanged(bool oldValue, bool newValue, bool asServer)
     {
 #if UNITY_EDITOR
-        Debug.Log($"[{gameObject.name}] 추적 상태 동기화: {oldValue} -> {newValue}");
+        LogManager.Log(LogCategory.Enemy, $"{gameObject.name} 추적 상태 동기화: {oldValue} -> {newValue}", this);
 #endif
     }
     
@@ -198,14 +198,14 @@ public class EnemyNetworkSync : AgentNetworkSync
             enemyControll.SetAIState(newValue);
         }
 #if UNITY_EDITOR
-        Debug.Log($"[{gameObject.name}] AI 상태 동기화: {oldValue} -> {newValue}");
+        LogManager.Log(LogCategory.Enemy, $"{gameObject.name} AI 상태 동기화: {oldValue} -> {newValue}", this);
 #endif
     }
     
     private void OnCurrentTargetChanged(NetworkObject oldValue, NetworkObject newValue, bool asServer)
     {
 #if UNITY_EDITOR
-        Debug.Log($"[{gameObject.name}] 현재 타겟 동기화: {oldValue?.name ?? "null"} -> {newValue?.name ?? "null"}");
+        LogManager.Log(LogCategory.Enemy, $"{gameObject.name} 현재 타겟 동기화: {oldValue?.name ?? "null"} -> {newValue?.name ?? "null"}", this);
 #endif
         OnEnemyTargetChanged?.Invoke(newValue);
     }
@@ -213,7 +213,7 @@ public class EnemyNetworkSync : AgentNetworkSync
     private void OnAttackCooldownChanged(float oldValue, float newValue, bool asServer)
     {
 #if UNITY_EDITOR
-        Debug.Log($"[{gameObject.name}] 공격 쿨다운 동기화: {oldValue:F2} -> {newValue:F2}");
+        LogManager.Log(LogCategory.Enemy, $"{gameObject.name} 공격 쿨다운 동기화: {oldValue:F2} -> {newValue:F2}", this);
 #endif
     }
     
@@ -225,7 +225,7 @@ public class EnemyNetworkSync : AgentNetworkSync
             enemyControll.SetStrafeState(newValue, syncStrafeDirection.Value);
         }
 #if UNITY_EDITOR
-        Debug.Log($"[{gameObject.name}] 회피 기동 상태 동기화: {oldValue} -> {newValue}");
+        LogManager.Log(LogCategory.Enemy, $"{gameObject.name} 회피 기동 상태 동기화: {oldValue} -> {newValue}", this);
 #endif
     }
     
@@ -237,7 +237,7 @@ public class EnemyNetworkSync : AgentNetworkSync
             enemyControll.SetStrafeState(syncIsStrafing.Value, newValue);
         }
 #if UNITY_EDITOR
-        Debug.Log($"[{gameObject.name}] 회피 방향 동기화: {oldValue} -> {newValue}");
+        LogManager.Log(LogCategory.Enemy, $"{gameObject.name} 회피 방향 동기화: {oldValue} -> {newValue}", this);
 #endif
     }
     
@@ -257,7 +257,7 @@ public class EnemyNetworkSync : AgentNetworkSync
         if (!asServer)
         {
 #if UNITY_EDITOR
-            Debug.Log($"[{gameObject.name}] 적 조준 방향 보간 시작: {oldValue} -> {newValue}");
+            LogManager.Log(LogCategory.Enemy, $"{gameObject.name} 적 조준 방향 보간 시작: {oldValue} -> {newValue}", this);
 #endif
         }
     }
@@ -273,7 +273,7 @@ public class EnemyNetworkSync : AgentNetworkSync
             enemyState.HandleDeath();
         }
         
-        Debug.Log($"[{gameObject.name}] 적 사망 처리 (킬러: {killer?.ClientId})");
+        LogManager.Log(LogCategory.Enemy, $"{gameObject.name} 적 사망 처리 (킬러: {killer?.ClientId})", this);
         
         // TODO: 적 전용 사망 로직
         // - 경험치/아이템 드롭

@@ -34,12 +34,12 @@ public class PlayerNetworkSync : AgentNetworkSync
         
         if (playerState == null)
         {
-            Debug.LogError($"[{gameObject.name}] PlayerState 컴포넌트를 찾을 수 없습니다.");
+            LogManager.LogError(LogCategory.Player, $"{gameObject.name} PlayerState 컴포넌트를 찾을 수 없습니다.", this);
         }
         
         if (playerControll == null)
         {
-            Debug.LogError($"[{gameObject.name}] PlayerControll 컴포넌트를 찾을 수 없습니다.");
+            LogManager.LogError(LogCategory.Player, $"{gameObject.name} PlayerControll 컴포넌트를 찾을 수 없습니다.", this);
         }
     }
     
@@ -74,7 +74,7 @@ public class PlayerNetworkSync : AgentNetworkSync
     {
         if (playerState != null && playerState.IsDead)
         {
-            Debug.Log($"[{gameObject.name}] 서버에서 부활 처리");
+            LogManager.Log(LogCategory.Player, $"{gameObject.name} 서버에서 부활 처리", this);
             
             playerState.Revive();
             syncCurrentHp.Value = playerState.currentHp;
@@ -93,7 +93,7 @@ public class PlayerNetworkSync : AgentNetworkSync
     {
         if (syncIsReviving.Value) return;
         
-        Debug.Log($"[{gameObject.name}] 서버에서 부활 시작");
+        LogManager.Log(LogCategory.Player, $"{gameObject.name} 서버에서 부활 시작", this);
         syncIsReviving.Value = true;
         StartCoroutine(ServerReviveProcess(targetPlayer));
     }
@@ -143,7 +143,7 @@ public class PlayerNetworkSync : AgentNetworkSync
     {
         if (syncIsReloading.Value) return;
         
-        Debug.Log($"[{gameObject.name}] 서버에서 재장전 시작");
+        LogManager.Log(LogCategory.Player, $"{gameObject.name} 서버에서 재장전 시작", this);
         RequestSetReloadingState(true);
         StartCoroutine(ServerReloadProcess());
     }
@@ -171,19 +171,19 @@ public class PlayerNetworkSync : AgentNetworkSync
     private void OnReviveProgress(float progress)
     {
         syncReviveProgress.Value = progress;
-        Debug.Log($"[{gameObject.name}] 부활 진행률: {progress * 100:F1}%");
+                        LogManager.Log(LogCategory.Player, $"{gameObject.name} 부활 진행률: {progress * 100:F1}%", this);
     }
     
     [ObserversRpc]
     private void OnReviveComplete(NetworkObject targetPlayer)
     {
-        Debug.Log($"[{gameObject.name}] 부활 완료");
+                        LogManager.Log(LogCategory.Player, $"{gameObject.name} 부활 완료", this);
     }
     
     [ObserversRpc]
     private void OnRevivedEffect()
     {
-        Debug.Log($"[{gameObject.name}] 부활 효과 재생");
+        LogManager.Log(LogCategory.Player, $"{gameObject.name} 부활 효과 재생", this);
     }
     
     // 플레이어 전용 발사 효과
@@ -196,13 +196,13 @@ public class PlayerNetworkSync : AgentNetworkSync
     [ObserversRpc]
     private void OnReloadProgress(float progress)
     {
-        Debug.Log($"[{gameObject.name}] 재장전 진행률: {progress * 100:F1}%");
+                        LogManager.Log(LogCategory.Player, $"{gameObject.name} 재장전 진행률: {progress * 100:F1}%", this);
     }
     
     [ObserversRpc]
     private void OnReloadComplete()
     {
-        Debug.Log($"[{gameObject.name}] 재장전 완료");
+                        LogManager.Log(LogCategory.Player, $"{gameObject.name} 재장전 완료", this);
     }
     
     // SyncVar 변경 시 호출되는 메서드들
@@ -212,7 +212,7 @@ public class PlayerNetworkSync : AgentNetworkSync
         {
             playerState.reviveCurrentCount = newValue;
 #if UNITY_EDITOR
-            Debug.Log($"[{gameObject.name}] 부활 횟수 동기화: {oldValue} -> {newValue}");
+            LogManager.Log(LogCategory.Player, $"{gameObject.name} 부활 횟수 동기화: {oldValue} -> {newValue}", this);
 #endif
         }
     }
@@ -220,35 +220,35 @@ public class PlayerNetworkSync : AgentNetworkSync
     private void OnIsRevivingChanged(bool oldValue, bool newValue, bool asServer)
     {
 #if UNITY_EDITOR
-        Debug.Log($"[{gameObject.name}] 부활 진행 상태 동기화: {oldValue} -> {newValue}");
+        LogManager.Log(LogCategory.Player, $"{gameObject.name} 부활 진행 상태 동기화: {oldValue} -> {newValue}", this);
 #endif
     }
     
     private void OnReviveProgressChanged(float oldValue, float newValue, bool asServer)
     {
 #if UNITY_EDITOR
-        Debug.Log($"[{gameObject.name}] 부활 진행률 동기화: {oldValue * 100:F1}% -> {newValue * 100:F1}%");
+        LogManager.Log(LogCategory.Player, $"{gameObject.name} 부활 진행률 동기화: {oldValue * 100:F1}% -> {newValue * 100:F1}%", this);
 #endif
     }
     
     private void OnMoveDirectionChanged(Vector2 oldValue, Vector2 newValue, bool asServer)
     {
 #if UNITY_EDITOR
-        Debug.Log($"[{gameObject.name}] 이동 방향 동기화: {oldValue} -> {newValue}");
+        LogManager.Log(LogCategory.Player, $"{gameObject.name} 이동 방향 동기화: {oldValue} -> {newValue}", this);
 #endif
     }
     
     private void OnIsMovingChanged(bool oldValue, bool newValue, bool asServer)
     {
 #if UNITY_EDITOR
-        Debug.Log($"[{gameObject.name}] 이동 상태 동기화: {oldValue} -> {newValue}");
+        LogManager.Log(LogCategory.Player, $"{gameObject.name} 이동 상태 동기화: {oldValue} -> {newValue}", this);
 #endif
     }
     
     private void OnIsAttackingChanged(bool oldValue, bool newValue, bool asServer)
     {
 #if UNITY_EDITOR
-        Debug.Log($"[{gameObject.name}] 공격 상태 동기화: {oldValue} -> {newValue}");
+        LogManager.Log(LogCategory.Player, $"{gameObject.name} 공격 상태 동기화: {oldValue} -> {newValue}", this);
 #endif
     }
     
@@ -268,7 +268,7 @@ public class PlayerNetworkSync : AgentNetworkSync
         if (!IsOwner)
         {
 #if UNITY_EDITOR
-            Debug.Log($"[{gameObject.name}] 플레이어 조준 방향 보간 시작: {oldValue} -> {newValue}");
+            LogManager.Log(LogCategory.Player, $"{gameObject.name} 플레이어 조준 방향 보간 시작: {oldValue} -> {newValue}", this);
 #endif
         }
     }
@@ -309,7 +309,7 @@ public class PlayerNetworkSync : AgentNetworkSync
         base.HandleAgentDeath(killer);
         
         // ✅ 플레이어 전용 사망 처리
-        Debug.Log($"[{gameObject.name}] 플레이어 사망 처리 (킬러: {killer?.ClientId})");
+        LogManager.Log(LogCategory.Player, $"{gameObject.name} 플레이어 사망 처리 (킬러: {killer?.ClientId})", this);
         
         // TODO: 플레이어 전용 사망 로직
         // - 리스폰 타이머 시작

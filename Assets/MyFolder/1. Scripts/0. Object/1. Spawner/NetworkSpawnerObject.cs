@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections;
 using FishNet.Object;
 using FishNet;
+using MyFolder._1._Scripts._3._SingleTone;
 
 public class NetworkSpawnerObject : NetworkBehaviour
 {
@@ -41,7 +42,7 @@ public class NetworkSpawnerObject : NetworkBehaviour
 
     public override void OnStartClient()
     {
-        if (!IsServer)
+        if (!IsServerInitialized)
         {
             // 클라이언트에서는 스폰 로직 비활성화
             enabled = false;
@@ -55,24 +56,52 @@ public class NetworkSpawnerObject : NetworkBehaviour
         float waitTime = 0f;
         const float maxWaitTime = 10f; // 최대 10초 대기
         
-        while (NetworkEnemyManager.Instance == null && waitTime < maxWaitTime)
+        while (waitTime < maxWaitTime)
         {
+            // NetworkEnemyManager 인스턴스 존재 확인
+            if (NetworkEnemyManager.Instance != null)
+            {
+                // NetworkEnemyManager가 서버로 완전히 초기화되었는지 확인
+                if (NetworkEnemyManager.Instance.IsServer)
+                {
+                    Log("NetworkEnemyManager 서버 초기화 완료 - 연결 성공");
+                    break;
+                }
+                else
+                {
+                    Log("NetworkEnemyManager 인스턴스 존재하지만 서버 초기화 대기 중...");
+                }
+            }
+            else
+            {
+                Log("NetworkEnemyManager 인스턴스 대기 중...");
+            }
+            
             yield return new WaitForSeconds(0.1f);
             waitTime += 0.1f;
         }
         
-        if (NetworkEnemyManager.Instance == null)
+        if (!NetworkEnemyManager.Instance)
         {
             LogError("NetworkEnemyManager 초기화 타임아웃! 스포너를 비활성화합니다.");
             enabled = false;
             yield break;
         }
-        else
+        
+        if (!NetworkEnemyManager.Instance.IsServer)
         {
-            Log("NetworkEnemyManager 연결 완료");
-            // NetworkEnemyManager에 스포너 등록
-            NetworkEnemyManager.Instance.AddSpawner();
+            LogError("NetworkEnemyManager가 서버로 초기화되지 않았습니다! 스포너를 비활성화합니다.");
+            enabled = false;
+            yield break;
         }
+
+        // 안전하게 NetworkEnemyManager에 스포너 등록
+        Log("NetworkEnemyManager 연결 완료 - 스포너 등록 시작");
+        Log($"스포너 등록 전 상태 확인 - NetworkEnemyManager IsServer: {NetworkEnemyManager.Instance.IsServer}, IsNetworked: {NetworkEnemyManager.Instance.IsNetworked}");
+        
+        NetworkEnemyManager.Instance.AddSpawner();
+        
+        Log("스포너 등록 완료 - 스폰 코루틴 시작 준비");
 
         // 스폰 코루틴 시작
         spawnCoroutine = StartCoroutine(SpawnRoutine());
@@ -90,7 +119,7 @@ public class NetworkSpawnerObject : NetworkBehaviour
         while (true)
         {
             // 서버에서만 실행하고, 최대 스폰 수량 체크
-            if (IsServer && CanSpawnMoreEnemies())
+            if (IsServerInitialized && CanSpawnMoreEnemies())
             {
                 SpawnEnemy();
             }
@@ -120,14 +149,14 @@ public class NetworkSpawnerObject : NetworkBehaviour
 
     private void SpawnEnemy()
     {
-        if (!IsServer) return;
+        if (!IsServerInitialized) return;
 
         // ✅ FishNet 올바른 방식: Instantiate 후 NetworkManager를 통해 스폰
         GameObject enemy = Instantiate(enemyPrefab, transform.position, Quaternion.identity);
         
         // NetworkObject 컴포넌트 확인
-        var networkObject = enemy.GetComponent<NetworkObject>();
-        if (networkObject == null)
+        enemy.TryGetComponent(out NetworkObject networkObject);
+        if (!networkObject)
         {
             LogError("생성된 적에 NetworkObject 컴포넌트가 없습니다.");
             Destroy(enemy);
@@ -135,7 +164,7 @@ public class NetworkSpawnerObject : NetworkBehaviour
         }
 
         // ✅ InstanceFinder를 통한 올바른 네트워크 스폰
-        if (InstanceFinder.ServerManager != null)
+        if (InstanceFinder.ServerManager)
         {
             InstanceFinder.ServerManager.Spawn(networkObject);
             Log($"네트워크 스폰 완료: {enemy.name}");
@@ -149,7 +178,7 @@ public class NetworkSpawnerObject : NetworkBehaviour
 
         // 타겟 설정 및 초기화
         GameObject target = PlayerManager.Instance.GetPlayer();
-        EnemyControll enemyControll = enemy.GetComponent<EnemyControll>();
+        enemy.TryGetComponent(out EnemyControll enemyControll);
         
         if (enemyControll && target)
         {
@@ -243,13 +272,13 @@ public class NetworkSpawnerObject : NetworkBehaviour
     {
         if (enableDebugLogs)
         {
-            Debug.Log($"[NetworkSpawnerObject - {gameObject.name}] {message}");
+            LogManager.Log(LogCategory.Spawner, $"NetworkSpawnerObject - {gameObject.name} {message}", this);
         }
     }
 
     private void LogError(string message)
     {
-        Debug.LogError($"[NetworkSpawnerObject - {gameObject.name}] {message}");
+        LogManager.LogError(LogCategory.Spawner, $"NetworkSpawnerObject - {gameObject.name} {message}", this);
     }
 
     // ✅ 네트워크 상태 안전 체크 헬퍼

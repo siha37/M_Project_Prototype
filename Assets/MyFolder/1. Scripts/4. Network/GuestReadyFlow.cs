@@ -15,7 +15,7 @@ public class GuestReadyFlow : MonoBehaviour
         if (connected && !FishNetConnector.Instance.IsHost() && FishNetConnector.Instance.IsClient() && !isSceneLoading)
         {
             isSceneLoading = true;
-            Debug.Log("게스트 FishNet 연결 완료! Ready 씬으로 이동");
+            LogManager.Log(LogCategory.Network, "게스트 FishNet 연결 완료! Ready 씬으로 이동");
             SceneManager.LoadSceneAsync(SceneName);
         }
     }

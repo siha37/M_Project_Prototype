@@ -96,12 +96,12 @@ public class AgentNetworkSync : NetworkBehaviour
         agentTransform = transform;
         if (agentState == null)
         {
-            Debug.LogError($"[{gameObject.name}] AgentState 컴포넌트를 찾을 수 없습니다.");
+            LogManager.LogError(LogCategory.Player, $"{gameObject.name} AgentState 컴포넌트를 찾을 수 없습니다.", this);
         }
         
         if (agentUI == null)
         {
-            Debug.LogWarning($"[{gameObject.name}] AgentUI 컴포넌트를 찾을 수 없습니다.");
+            LogManager.LogWarning(LogCategory.Player, $"{gameObject.name} AgentUI 컴포넌트를 찾을 수 없습니다.", this);
         }
         else
         {
@@ -128,7 +128,7 @@ public class AgentNetworkSync : NetworkBehaviour
     {
         if (agentState != null && !syncIsDead.Value)
         {
-            Debug.Log($"[{gameObject.name}] 서버에서 데미지 처리: {damage} (공격자: {attacker?.ClientId})");
+            LogManager.Log(LogCategory.Player, $"{gameObject.name} 서버에서 데미지 처리: {damage} (공격자: {attacker?.ClientId})", this);
             
             agentState.TakeDamage(damage, hitDirection);
             UpdateDamageSyncVars();
@@ -168,7 +168,7 @@ public class AgentNetworkSync : NetworkBehaviour
     {
         if (agentState)
         {
-            Debug.Log($"[{gameObject.name}] 서버에서 탄약 업데이트: {count}");
+            LogManager.Log(LogCategory.Player, $"{gameObject.name} 서버에서 탄약 업데이트: {count}", this);
             
             agentState.UpdateBulletCount(count);
             syncBulletCurrentCount.Value = agentState.bulletCurrentCount;
@@ -193,12 +193,12 @@ public class AgentNetworkSync : NetworkBehaviour
     [ServerRpc]
     public virtual void RequestShoot(float angle, Vector3 shotPosition)
     {
-        Debug.Log($"[{gameObject.name}] 서버에서 발사 처리: {angle} : {shotPosition}");
+        LogManager.Log(LogCategory.Player, $"{gameObject.name} 서버에서 발사 처리: {angle} : {shotPosition}", this);
         
         // ✅ BulletManager 초기화 확인 및 대기
         if (BulletManager.Instance == null)
         {
-            Debug.LogWarning($"[{gameObject.name}] BulletManager 초기화 대기 중...");
+            LogManager.LogWarning(LogCategory.Projectile, $"{gameObject.name} BulletManager 초기화 대기 중...", this);
             StartCoroutine(WaitForBulletManagerAndShoot(angle, shotPosition));
             return;
         }
@@ -235,12 +235,12 @@ public class AgentNetworkSync : NetworkBehaviour
         if (BulletManager.Instance != null)
         {
             // ✅ 초기화 완료 후 정상 발사 처리
-            Debug.Log($"[{gameObject.name}] BulletManager 초기화 완료 - 발사 재시도");
+            LogManager.Log(LogCategory.Projectile, $"{gameObject.name} BulletManager 초기화 완료 - 발사 재시도", this);
             RequestShoot(angle, shotPosition);
         }
         else
         {
-            Debug.LogError($"[{gameObject.name}] BulletManager 초기화 타임아웃! 발사 취소");
+                            LogManager.LogError(LogCategory.Projectile, $"{gameObject.name} BulletManager 초기화 타임아웃! 발사 취소", this);
         }
     }
     
@@ -250,7 +250,7 @@ public class AgentNetworkSync : NetworkBehaviour
     protected virtual void OnShootEffect(float angle, Vector3 position)
     {
         #if UNITY_EDITOR
-        Debug.Log($"[{gameObject.name}] 발사 효과 재생: {angle}");
+        LogManager.Log(LogCategory.Player, $"{gameObject.name} 발사 효과 재생: {angle}", this);
         #endif
         // ✅ 모든 클라이언트에서 추가 시각/음향 효과 처리
         // 자식 클래스에서 구체적인 효과 구현 (총구 화염, 사운드 등)
@@ -270,7 +270,7 @@ public class AgentNetworkSync : NetworkBehaviour
             }
             
 #if UNITY_EDITOR
-            Debug.Log($"[{gameObject.name}] 체력 동기화: {oldValue} -> {newValue}");
+            LogManager.Log(LogCategory.Player, $"{gameObject.name} 체력 동기화: {oldValue} -> {newValue}", this);
 #endif
         }
     }
@@ -288,7 +288,7 @@ public class AgentNetworkSync : NetworkBehaviour
             }
             
 #if UNITY_EDITOR
-            Debug.Log($"[{gameObject.name}] 탄약 동기화: {oldValue} -> {newValue}");
+            LogManager.Log(LogCategory.Player, $"{gameObject.name} 탄약 동기화: {oldValue} -> {newValue}", this);
 #endif
         }
     }
@@ -306,7 +306,7 @@ public class AgentNetworkSync : NetworkBehaviour
             }
             
 #if UNITY_EDITOR
-            Debug.Log($"[{gameObject.name}] 사망 상태 동기화: {oldValue} -> {newValue}");
+            LogManager.Log(LogCategory.Player, $"{gameObject.name} 사망 상태 동기화: {oldValue} -> {newValue}", this);
 #endif
         }
     }
@@ -327,7 +327,7 @@ public class AgentNetworkSync : NetworkBehaviour
         }
         
 #if UNITY_EDITOR
-        Debug.Log($"[{gameObject.name}] 재장전 상태 동기화: {oldValue} -> {newValue}");
+        LogManager.Log(LogCategory.Player, $"{gameObject.name} 재장전 상태 동기화: {oldValue} -> {newValue}", this);
 #endif
     }
     
@@ -352,7 +352,7 @@ public class AgentNetworkSync : NetworkBehaviour
         }
         
 #if UNITY_EDITOR
-        Debug.Log($"[{gameObject.name}] 조준 방향 동기화: {oldValue} -> {newValue}");
+        LogManager.Log(LogCategory.Player, $"{gameObject.name} 조준 방향 동기화: {oldValue} -> {newValue}", this);
 #endif
     }
     
@@ -361,14 +361,14 @@ public class AgentNetworkSync : NetworkBehaviour
     protected virtual void OnDamagedEffect(float damage, Vector2 hitDirection)
     {
         // 데미지 효과, 사운드 등
-        Debug.Log($"[{gameObject.name}] 데미지 효과 재생: {damage}");
+        LogManager.Log(LogCategory.Player, $"{gameObject.name} 데미지 효과 재생: {damage}", this);
     }
     
     [ObserversRpc]
     protected virtual void OnDeathEffect()
     {
         // 사망 효과, 파티클 등
-        Debug.Log($"[{gameObject.name}] 사망 효과 재생");
+        LogManager.Log(LogCategory.Player, $"{gameObject.name} 사망 효과 재생", this);
     }
     
     // 공통 유틸리티 메서드들
@@ -401,7 +401,7 @@ public class AgentNetworkSync : NetworkBehaviour
     protected virtual void HandleAgentDeath(NetworkConnection killer)
     {
         // 기본 사망 처리 - 상속 클래스에서 필요에 따라 오버라이드
-        Debug.Log($"[{gameObject.name}] 사망 처리 (킬러: {killer?.ClientId})");
+        LogManager.Log(LogCategory.Player, $"{gameObject.name} 사망 처리 (킬러: {killer?.ClientId})", this);
         
         // TODO: 킬/데스 통계, 리스폰 로직 등 구현
     }
@@ -412,7 +412,7 @@ public class AgentNetworkSync : NetworkBehaviour
         if (Application.isPlaying && syncCurrentHp != null)
         {
 #if UNITY_EDITOR
-            Debug.Log($"[{gameObject.name}] AgentNetworkSync 상태 - HP: {syncCurrentHp.Value}, Dead: {syncIsDead.Value}, Bullets: {syncBulletCurrentCount.Value}, Reloading: {syncIsReloading.Value}");
+            LogManager.Log(LogCategory.Player, $"{gameObject.name} AgentNetworkSync 상태 - HP: {syncCurrentHp.Value}, Dead: {syncIsDead.Value}, Bullets: {syncBulletCurrentCount.Value}, Reloading: {syncIsReloading.Value}", this);
 #endif
         }
     }

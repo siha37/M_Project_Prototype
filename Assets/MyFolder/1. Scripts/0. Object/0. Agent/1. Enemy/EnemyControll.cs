@@ -37,7 +37,7 @@ public class EnemyControll : NetworkBehaviour
     public override void OnStartServer()
     {
         InitializeComponents();
-        Debug.Log($"[{gameObject.name}] 서버에서 EnemyControll 시작");
+        LogManager.Log(LogCategory.Enemy, $"{gameObject.name} 서버에서 EnemyControll 시작", this);
     }
 
     public override void OnStartClient()
@@ -48,7 +48,7 @@ public class EnemyControll : NetworkBehaviour
         if (!IsServer)
         {
             enabled = false;
-            Debug.Log($"[{gameObject.name}] 클라이언트에서 EnemyControll 비활성화");
+            LogManager.Log(LogCategory.Enemy, $"{gameObject.name} 클라이언트에서 EnemyControll 비활성화", this);
         }
     }
 
@@ -68,19 +68,19 @@ public class EnemyControll : NetworkBehaviour
 
         if (navAgent == null)
         {
-            Debug.LogError($"[{gameObject.name}] NavMeshAgent 컴포넌트가 없습니다.");
+            LogManager.LogError(LogCategory.Enemy, $"{gameObject.name} NavMeshAgent 컴포넌트가 없습니다.", this);
             return;
         }
 
         if (state == null)
         {
-            Debug.LogError($"[{gameObject.name}] EnemyState 컴포넌트가 없습니다.");
+            LogManager.LogError(LogCategory.Enemy, $"{gameObject.name} EnemyState 컴포넌트가 없습니다.", this);
             return;
         }
 
         if (networkSync == null)
         {
-            Debug.LogError($"[{gameObject.name}] EnemyNetworkSync 컴포넌트가 없습니다.");
+            LogManager.LogError(LogCategory.Enemy, $"{gameObject.name} EnemyNetworkSync 컴포넌트가 없습니다.", this);
             return;
         }
 
@@ -94,7 +94,7 @@ public class EnemyControll : NetworkBehaviour
 
         if (!target)
         {
-            Debug.LogError($"[{gameObject.name}] 초기화할 타겟이 없습니다.");
+            LogManager.LogError(LogCategory.Enemy, $"{gameObject.name} 초기화할 타겟이 없습니다.", this);
             return;
         }
 
@@ -117,7 +117,7 @@ public class EnemyControll : NetworkBehaviour
             networkSync.RequestUpdateAIState("Patrol", startPos, targetNetworkObject);
         }
 
-        Debug.Log($"[{gameObject.name}] 서버에서 초기화 완료 - 타겟: {target.name}");
+        LogManager.Log(LogCategory.Enemy, $"{gameObject.name} 서버에서 초기화 완료 - 타겟: {target.name}", this);
     }
 
     private void Update()
@@ -177,7 +177,7 @@ public class EnemyControll : NetworkBehaviour
             else if (!isFindingPosition)
             {
                 UpdateAIState("Chase");
-                Debug.Log($"[{gameObject.name}] 시야가 막혀 사격 위치 탐색 시작");
+                LogManager.Log(LogCategory.Enemy, $"{gameObject.name} 시야가 막혀 사격 위치 탐색 시작", this);
                 StartCoroutine(FindShootingPosition());
             }
         }
@@ -350,7 +350,7 @@ public class EnemyControll : NetworkBehaviour
 
                     if (Time.time - startTime > moveTimeout)
                     {
-                        Debug.LogWarning($"[{gameObject.name}] 위치 이동 타임아웃");
+                        LogManager.LogWarning(LogCategory.Enemy, $"{gameObject.name} 위치 이동 타임아웃", this);
                         break;
                     }
                     yield return null;
@@ -363,7 +363,7 @@ public class EnemyControll : NetworkBehaviour
         }
 
         isFindingPosition = false;
-        Debug.Log($"[{gameObject.name}] 사격 위치 탐색 완료");
+                            LogManager.Log(LogCategory.Enemy, $"{gameObject.name} 사격 위치 탐색 완료", this);
     }
 
     private bool CheckLineOfSight()
@@ -452,7 +452,7 @@ public class EnemyControll : NetworkBehaviour
         }
 
         isReloading = false;
-        Debug.Log($"[{gameObject.name}] 서버에서 재장전 완료");
+                    LogManager.Log(LogCategory.Enemy, $"{gameObject.name} 서버에서 재장전 완료", this);
     }
 
     // 네트워크 동기화에서 호출할 공개 메서드들

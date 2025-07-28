@@ -133,11 +133,11 @@ public class RoomItemController : MonoBehaviour
     {
         if (string.IsNullOrEmpty(roomId))
         {
-            Debug.LogWarning("방 ID가 없습니다!");
+            LogManager.LogWarning(LogCategory.UI, "방 ID가 없습니다!");
             return;
         }
         
-        Debug.Log($"방 참가 시도: {roomId}");
+                    LogManager.Log(LogCategory.UI, $"방 참가 시도: {roomId}", this);
         
         // 여기에 FishNet 연결 로직 추가
         // NetworkManager.Instance.JoinRoom(roomId);
@@ -145,7 +145,7 @@ public class RoomItemController : MonoBehaviour
         // 임시로 방 정보 출력
         if (roomInfo != null)
         {
-            Debug.Log($"방 정보: {roomInfo.roomName} - {roomInfo.hostAddress}:{roomInfo.hostPort}");
+            LogManager.Log(LogCategory.UI, $"방 정보: {roomInfo.roomName} - {roomInfo.hostAddress}:{roomInfo.hostPort}", this);
         }
 
         networkUIManager.OnJoinRoomButtonClicked(roomId);

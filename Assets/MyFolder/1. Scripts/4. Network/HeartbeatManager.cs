@@ -60,7 +60,7 @@ public class HeartbeatManager : MonoBehaviour
         lastHeartbeatTime = Time.time;
         isHeartbeating = true;
         
-        Debug.Log($"하트비트 시작: {roomId}");
+        LogManager.Log(LogCategory.Network, $"하트비트 시작: {roomId}");
     }
     
     public void StopHeartbeat()
@@ -68,14 +68,14 @@ public class HeartbeatManager : MonoBehaviour
         currentRoomId = null;
         isHeartbeating = false;
         
-        Debug.Log("하트비트 중지");
+        LogManager.Log(LogCategory.Network, "하트비트 중지");
     }
     
     public async void SendHeartbeat()
     {
         if (string.IsNullOrEmpty(currentRoomId))
         {
-            Debug.LogWarning("하트비트 전송 실패: 방 ID가 없습니다");
+            LogManager.LogWarning(LogCategory.Network, "하트비트 전송 실패: 방 ID가 없습니다");
             return;
         }
         
@@ -86,29 +86,29 @@ public class HeartbeatManager : MonoBehaviour
             if (success)
             {
                 lastHeartbeatTime = Time.time;
-                Debug.Log($"하트비트 전송 성공: {currentRoomId}");
+                LogManager.Log(LogCategory.Network, $"하트비트 전송 성공: {currentRoomId}");
             }
             else
             {
-                Debug.LogWarning($"하트비트 전송 실패: {currentRoomId}");
+                LogManager.LogWarning(LogCategory.Network, $"하트비트 전송 실패: {currentRoomId}");
             }
         }
         catch (Exception ex)
         {
-            Debug.LogError($"하트비트 전송 중 오류: {ex.Message}");
+            LogManager.LogError(LogCategory.Network, $"하트비트 전송 중 오류: {ex.Message}");
         }
     }
     
     public void SetHeartbeatInterval(float interval)
     {
         heartbeatInterval = interval;
-        Debug.Log($"하트비트 간격 변경: {interval}초");
+        LogManager.Log(LogCategory.Network, $"하트비트 간격 변경: {interval}초");
     }
     
     public void SetAutoHeartbeat(bool enabled)
     {
         autoHeartbeat = enabled;
-        Debug.Log($"자동 하트비트: {(enabled ? "활성화" : "비활성화")}");
+        LogManager.Log(LogCategory.Network, $"자동 하트비트: {(enabled ? "활성화" : "비활성화")}");
     }
     
     public string GetCurrentRoomId()

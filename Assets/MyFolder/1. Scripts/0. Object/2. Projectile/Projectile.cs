@@ -24,7 +24,7 @@ public class Projectile : NetworkBehaviour
         // 서버에서만 물리 시뮬레이션 활성화
         rb.linearVelocity = direction * speed;
         
-        Debug.Log($"[{gameObject.name}] 서버에서 총알 물리 시작: {speed}");
+        LogManager.Log(LogCategory.Projectile, $"{gameObject.name} 서버에서 총알 물리 시작: {speed}", this);
     }
 
     public override void OnStartClient()
@@ -36,7 +36,7 @@ public class Projectile : NetworkBehaviour
             if (rb == null) rb = GetComponent<Rigidbody2D>();
             rb.isKinematic = true; // 물리 비활성화
             
-            Debug.Log($"[{gameObject.name}] 클라이언트에서 총알 시각 모드");
+            LogManager.Log(LogCategory.Projectile, $"{gameObject.name} 클라이언트에서 총알 시각 모드", this);
         }
     }
 
@@ -139,7 +139,7 @@ public class Projectile : NetworkBehaviour
         if (agentSync != null)
         {
             agentSync.RequestTakeDamage(damage, hitDirection, ownerConnection);
-            Debug.Log($"[{gameObject.name}] {target.name}에게 {damage} 데미지 (공격자: {ownerConnection?.ClientId})");
+                                LogManager.Log(LogCategory.Projectile, $"{gameObject.name} {target.name}에게 {damage} 데미지 (공격자: {ownerConnection?.ClientId})", this);
         }
         else
         {
@@ -172,7 +172,7 @@ public class Projectile : NetworkBehaviour
     // 충돌 시 시각/음향 효과
     private void PlayHitEffect(Vector3 position)
     {
-        Debug.Log($"[{gameObject.name}] 충돌 효과 재생: {position}");
+        LogManager.Log(LogCategory.Projectile, $"{gameObject.name} 충돌 효과 재생: {position}", this);
         
         // TODO: 충돌 파티클, 사운드 등 구현
         // ParticleSystem hitEffect = GetComponent<ParticleSystem>();
@@ -190,7 +190,7 @@ public class Projectile : NetworkBehaviour
     {
         if (Application.isPlaying && ownerConnection != null)
         {
-            Debug.Log($"[{gameObject.name}] Owner: {ownerConnection.ClientId}, Damage: {damage}, Lifetime: {lifetime}");
+            LogManager.Log(LogCategory.Projectile, $"{gameObject.name} Owner: {ownerConnection.ClientId}, Damage: {damage}, Lifetime: {lifetime}", this);
         }
     }
 } 

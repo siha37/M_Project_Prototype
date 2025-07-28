@@ -69,7 +69,7 @@ public class FishNetConnector : MonoBehaviour
         
         if (fishNetworkManager == null || tugboat == null)
         {
-            Debug.LogError("FishNet NetworkManager 또는 Tugboat를 찾을 수 없습니다!");
+            LogManager.LogError(LogCategory.Network, "FishNet NetworkManager 또는 Tugboat를 찾을 수 없습니다!");
             return;
         }
         
@@ -77,7 +77,7 @@ public class FishNetConnector : MonoBehaviour
         fishNetworkManager.ServerManager.OnServerConnectionState += OnServerConnectionState;
         fishNetworkManager.ClientManager.OnClientConnectionState += OnClientConnectionState;
         
-        Debug.Log("FishNetConnector 초기화 완료");
+        LogManager.Log(LogCategory.Network, "FishNetConnector 초기화 완료");
     }
     
     // 호스트로 서버 시작
@@ -214,7 +214,7 @@ public class FishNetConnector : MonoBehaviour
         }
         catch (Exception ex)
         {
-            Debug.LogError($"연결 해제 오류: {ex.Message}");
+            LogManager.LogError(LogCategory.Network, $"연결 해제 오류: {ex.Message}");
         }
     }
     
@@ -265,7 +265,7 @@ public class FishNetConnector : MonoBehaviour
     private void UpdateFishNetStatus(string status)
     {
         fishNetStatus = status;
-        Debug.Log($"[FishNetConnector] {status}");
+        LogManager.Log(LogCategory.Network, $"FishNetConnector {status}");
     }
     
     // 현재 연결 상태 확인

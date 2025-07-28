@@ -267,7 +267,7 @@ BoxCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
@@ -306,6 +306,7 @@ MonoBehaviour:
   - {fileID: 2641898887914180647}
   - {fileID: 5869935300169224175}
   - {fileID: -101737973074151377}
+  - {fileID: 6657940407241722385}
   InitializedParentNetworkBehaviour: {fileID: 0}
   InitializedNestedNetworkObjects: []
   RuntimeParentNetworkBehaviour: {fileID: 0}
@@ -330,7 +331,7 @@ MonoBehaviour:
   _spectatorInterpolation: 2
   _enableTeleport: 0
   _teleportThreshold: 1
-  <PrefabId>k__BackingField: 11
+  <PrefabId>k__BackingField: 13
   <SpawnableCollectionId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 17166517339518962138
   <SceneId>k__BackingField: 0
@@ -528,9 +529,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b35328b8de1591148ba1a7b013391c38, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 255
+  _componentIndexCache: 4
   _addedNetworkObject: {fileID: -3747450574471003315}
-  _networkObjectCache: {fileID: 0}
+  _networkObjectCache: {fileID: -3747450574471003315}
   bulletPrefab: {fileID: 0}
   bulletSpeed: 15
   bulletLifetime: 5

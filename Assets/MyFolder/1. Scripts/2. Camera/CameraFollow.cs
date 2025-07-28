@@ -23,7 +23,7 @@ public class CameraFollow : MonoBehaviour
                 if (_camera != null)
                 {
                     _camera.Follow = player.transform;
-                    Debug.Log($"Cinemachine 타겟 설정: {player.gameObject.name}");
+                    LogManager.Log(LogCategory.Camera, $"Cinemachine 타겟 설정: {player.gameObject.name}");
                 }
                 return;
             }

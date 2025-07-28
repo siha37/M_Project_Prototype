@@ -19,7 +19,7 @@ public class HostReadyFlow : MonoBehaviour
         if (connected && FishNetConnector.Instance.IsHost() && !isSceneLoading)
         {
             isSceneLoading = true;
-            Debug.Log("호스트 FishNet 서버 시작 완료! Ready 씬으로 이동");
+            LogManager.Log(LogCategory.Network, "호스트 FishNet 서버 시작 완료! Ready 씬으로 이동");
             LoadReadySceneForAll();
         }
     }

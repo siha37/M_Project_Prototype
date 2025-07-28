@@ -20,7 +20,7 @@ public static class DeviceIdentifier
             // 하드웨어 ID + 프로세스 ID 조합
             deviceId = $"{hardwareId}_{processId}";
             
-            Debug.Log($"[DeviceIdentifier] 생성된 디바이스 ID: {deviceId} (프로세스 ID: {processId})");
+            LogManager.Log(LogCategory.System, $"DeviceIdentifier 생성된 디바이스 ID: {deviceId} (프로세스 ID: {processId})");
         }
         
         return deviceId;
@@ -49,7 +49,7 @@ public static class DeviceIdentifier
         }
         catch (Exception ex)
         {
-            Debug.LogError($"[DeviceIdentifier] 하드웨어 ID 생성 실패: {ex.Message}");
+            LogManager.LogError(LogCategory.System, $"DeviceIdentifier 하드웨어 ID 생성 실패: {ex.Message}");
             // 폴백: 랜덤 ID 생성
             return Guid.NewGuid().ToString().Substring(0, 16);
         }
@@ -61,15 +61,15 @@ public static class DeviceIdentifier
         try
         {
             var process = System.Diagnostics.Process.GetCurrentProcess();
-            Debug.Log($"[DeviceIdentifier] 프로세스 정보:");
-            Debug.Log($"  - 프로세스 ID: {process.Id}");
-            Debug.Log($"  - 프로세스 이름: {process.ProcessName}");
-            Debug.Log($"  - 시작 시간: {process.StartTime}");
-            Debug.Log($"  - 디바이스 ID: {GetDeviceId()}");
+            LogManager.Log(LogCategory.System, $"DeviceIdentifier 프로세스 정보:");
+            LogManager.Log(LogCategory.System, $"  - 프로세스 ID: {process.Id}");
+            LogManager.Log(LogCategory.System, $"  - 프로세스 이름: {process.ProcessName}");
+            LogManager.Log(LogCategory.System, $"  - 시작 시간: {process.StartTime}");
+            LogManager.Log(LogCategory.System, $"  - 디바이스 ID: {GetDeviceId()}");
         }
         catch (Exception ex)
         {
-            Debug.LogError($"[DeviceIdentifier] 프로세스 정보 조회 실패: {ex.Message}");
+            LogManager.LogError(LogCategory.System, $"DeviceIdentifier 프로세스 정보 조회 실패: {ex.Message}");
         }
     }
 } 

@@ -142,4 +142,46 @@ public class PlayerInputControll : NetworkBehaviour
     {
         reloadCallback?.Invoke();
     }
+
+    public override void OnStopClient()
+{
+    UnregisterInputActions();
+}
+
+private void OnDestroy()
+{
+    UnregisterInputActions();
+}
+
+private void UnregisterInputActions()
+{
+    if (move != null)
+    {
+        move.performed -= MovePerformed;
+        move.canceled -= MoveCancle;
+    }
+    
+    if (look != null)
+    {
+        look.performed -= LookPerformed;
+    }
+    
+    if (attack != null)
+    {
+        attack.started -= AttackStart;
+        attack.canceled -= AttackCancel;
+    }
+    
+    if (interact != null)
+    {
+        interact.started -= InteractStart;
+        interact.performed -= InteractPerformed;
+        interact.canceled -= InteractCanceled;
+    }
+    
+    if (reload != null)
+    {
+        reload.started -= ReloadStart;
+    }
+}
 }

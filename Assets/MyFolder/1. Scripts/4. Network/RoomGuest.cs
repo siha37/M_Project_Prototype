@@ -44,7 +44,7 @@ public class RoomGuest
             
             if (!response.success)
             {
-                Debug.LogError($"방 리스트 조회 실패: {response.error?.message}");
+                LogManager.LogError(LogCategory.Network, $"방 리스트 조회 실패: {response.error?.message}");
                 return new List<RoomInfo>();
             }
             
@@ -52,8 +52,8 @@ public class RoomGuest
             {
                 try
                 {
-                    Debug.Log($"서버 응답 데이터 타입: {response.data.GetType()}");
-                    Debug.Log($"서버 응답 데이터: {JsonConvert.SerializeObject(response.data)}");
+                                    LogManager.Log(LogCategory.Network, $"서버 응답 데이터 타입: {response.data.GetType()}");
+                LogManager.Log(LogCategory.Network, $"서버 응답 데이터: {JsonConvert.SerializeObject(response.data)}");
 
                     // rooms 필드만 추출
                     var outer = JsonConvert.DeserializeObject<Dictionary<string, object>>(response.data.ToString());
@@ -65,19 +65,19 @@ public class RoomGuest
                     }
                     else
                     {
-                        Debug.LogError("방 리스트 응답에 rooms 필드가 없음");
+                        LogManager.LogError(LogCategory.Network, "방 리스트 응답에 rooms 필드가 없음");
                         return new List<RoomInfo>();
                     }
                 }
                 catch (JsonException jsonEx)
                 {
-                    Debug.LogError($"JSON 파싱 오류: {jsonEx.Message}");
-                    Debug.LogError($"파싱 시도한 데이터: {response.data}");
+                    LogManager.LogError(LogCategory.Network, $"JSON 파싱 오류: {jsonEx.Message}");
+                    LogManager.LogError(LogCategory.Network, $"파싱 시도한 데이터: {response.data}");
                     return new List<RoomInfo>();
                 }
                 catch (Exception parseEx)
                 {
-                    Debug.LogError($"데이터 파싱 오류: {parseEx.Message}");
+                    LogManager.LogError(LogCategory.Network, $"데이터 파싱 오류: {parseEx.Message}");
                     return new List<RoomInfo>();
                 }
             }
@@ -86,12 +86,12 @@ public class RoomGuest
         }
         catch (NetworkException ex)
         {
-            Debug.LogError($"네트워크 오류: {ex.Message}");
+            LogManager.LogError(LogCategory.Network, $"네트워크 오류: {ex.Message}");
             return new List<RoomInfo>();
         }
         catch (Exception ex)
         {
-            Debug.LogError($"방 리스트 조회 중 오류: {ex.Message}");
+            LogManager.LogError(LogCategory.Network, $"방 리스트 조회 중 오류: {ex.Message}");
             return new List<RoomInfo>();
         }
     }
@@ -118,7 +118,7 @@ public class RoomGuest
             
             if (!response.success)
             {
-                Debug.LogError($"방 참가 실패: {response.error?.message}");
+                LogManager.LogError(LogCategory.Network, $"방 참가 실패: {response.error?.message}");
                 return new JoinRoomResult 
                 { 
                     success = false, 
@@ -144,7 +144,7 @@ public class RoomGuest
                     }
                     else
                     {
-                        Debug.LogError("서버 응답의 data 파싱 실패");
+                        LogManager.LogError(LogCategory.Network, "서버 응답의 data 파싱 실패");
                         return new JoinRoomResult 
                         { 
                             success = false, 
@@ -154,8 +154,8 @@ public class RoomGuest
                 }
                 catch (JsonException jsonEx)
                 {
-                    Debug.LogError($"JSON 파싱 오류: {jsonEx.Message}");
-                    Debug.LogError($"파싱 시도한 데이터: {response.data}");
+                    LogManager.LogError(LogCategory.Network, $"JSON 파싱 오류: {jsonEx.Message}");
+                    LogManager.LogError(LogCategory.Network, $"파싱 시도한 데이터: {response.data}");
                     return new JoinRoomResult 
                     { 
                         success = false, 
@@ -168,12 +168,12 @@ public class RoomGuest
         }
         catch (NetworkException ex)
         {
-            Debug.LogError($"네트워크 오류: {ex.Message}");
+            LogManager.LogError(LogCategory.Network, $"네트워크 오류: {ex.Message}");
             return new JoinRoomResult { success = false, errorMessage = ex.Message };
         }
         catch (Exception ex)
         {
-            Debug.LogError($"방 참가 중 오류: {ex.Message}");
+            LogManager.LogError(LogCategory.Network, $"방 참가 중 오류: {ex.Message}");
             return new JoinRoomResult { success = false, errorMessage = ex.Message };
         }
     }
@@ -199,7 +199,7 @@ public class RoomGuest
             
             if (!response.success)
             {
-                Debug.LogError($"플레이어 목록 조회 실패: {response.error?.message}");
+                LogManager.LogError(LogCategory.Network, $"플레이어 목록 조회 실패: {response.error?.message}");
                 return new List<PlayerInfo>();
             }
             
@@ -213,7 +213,7 @@ public class RoomGuest
         }
         catch (Exception ex)
         {
-            Debug.LogError($"플레이어 목록 조회 중 오류: {ex.Message}");
+            LogManager.LogError(LogCategory.Network, $"플레이어 목록 조회 중 오류: {ex.Message}");
             return new List<PlayerInfo>();
         }
     }
@@ -239,16 +239,16 @@ public class RoomGuest
             
             if (!response.success)
             {
-                Debug.LogError($"방 퇴장 실패: {response.error?.message}");
+                LogManager.LogError(LogCategory.Network, $"방 퇴장 실패: {response.error?.message}");
                 return false;
             }
             
-            Debug.Log($"방 퇴장 성공: {roomId}");
+            LogManager.Log(LogCategory.Network, $"방 퇴장 성공: {roomId}");
             return true;
         }
         catch (Exception ex)
         {
-            Debug.LogError($"방 퇴장 중 오류: {ex.Message}");
+            LogManager.LogError(LogCategory.Network, $"방 퇴장 중 오류: {ex.Message}");
             return false;
         }
     }
@@ -262,7 +262,7 @@ public class RoomGuest
         }
         catch (Exception ex)
         {
-            Debug.LogError($"방 정보 조회 중 오류: {ex.Message}");
+            LogManager.LogError(LogCategory.Network, $"방 정보 조회 중 오류: {ex.Message}");
             return null;
         }
     }
@@ -301,12 +301,12 @@ public class RoomGuest
                 }
             }
             
-            Debug.Log($"방 검색 완료! 결과: {filteredRooms.Count}개");
+            LogManager.Log(LogCategory.Network, $"방 검색 완료! 결과: {filteredRooms.Count}개");
             return filteredRooms;
         }
         catch (Exception ex)
         {
-            Debug.LogError($"방 검색 중 오류: {ex.Message}");
+            LogManager.LogError(LogCategory.Network, $"방 검색 중 오류: {ex.Message}");
             return new List<RoomInfo>();
         }
     }

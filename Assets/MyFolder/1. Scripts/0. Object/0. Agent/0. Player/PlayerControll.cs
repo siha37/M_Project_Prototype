@@ -66,7 +66,7 @@ public class PlayerControll : NetworkBehaviour
             }
             if (mainCamera == null)
             {
-                Debug.LogError($"[{gameObject.name}] 카메라를 찾을 수 없습니다!");
+                LogManager.LogError(LogCategory.Player, $"{gameObject.name} 카메라를 찾을 수 없습니다!", this);
             }
         }
     }
@@ -105,12 +105,18 @@ public class PlayerControll : NetworkBehaviour
     
     void MoveStop()
     {
+        if(rd2D == null || !rd2D) return;
         rd2D.linearVelocity = Vector2.zero;
     }
 
     void Look(Vector2 position)
     {
-        if (!IsOwner || mainCamera == null) return;
+        if (!mainCamera)
+        {
+            mainCamera = Camera.main;
+            return;
+        }
+        if (!IsOwner) return;
         
         Vector2 targetVector = Vector2.zero;
         
@@ -189,8 +195,33 @@ public class PlayerControll : NetworkBehaviour
             }
             else
             {
-                Debug.LogError($"[{gameObject.name}] PlayerNetworkSync 컴포넌트를 찾을 수 없습니다!");
+                LogManager.LogError(LogCategory.Player, $"{gameObject.name} PlayerNetworkSync 컴포넌트를 찾을 수 없습니다!", this);
             }
+        }
+    }
+    // 콜백 해제를 위한 메서드 추가
+    public override void OnStopClient()
+    {
+        if (playerInputControll != null && IsOwner)
+        {
+            playerInputControll.movePerformedCallback -= Move;
+            playerInputControll.moveStopCallback -= MoveStop;
+            playerInputControll.lookPerformedCallback -= Look;
+            playerInputControll.attackCallback -= AttackTrigger;
+            playerInputControll.reloadCallback -= ReloadTrigger;
+        }
+    }
+
+    private void OnDestroy()
+    {
+        // 추가 안전 장치로 OnDestroy에서도 콜백 해제
+        if (playerInputControll != null && IsOwner)
+        {
+            playerInputControll.movePerformedCallback -= Move;
+            playerInputControll.moveStopCallback -= MoveStop;
+            playerInputControll.lookPerformedCallback -= Look;
+            playerInputControll.attackCallback -= AttackTrigger;
+            playerInputControll.reloadCallback -= ReloadTrigger;
         }
     }
 }

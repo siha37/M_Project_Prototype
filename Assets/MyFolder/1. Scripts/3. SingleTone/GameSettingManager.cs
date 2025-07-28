@@ -44,11 +44,11 @@ namespace MyFolder._1._Scripts._5._Manager
             if (Instance == null)
             {
                 Instance = this;
-                Debug.Log("[GameSettingManager] 싱글톤 인스턴스 생성");
+                LogManager.Log(LogCategory.System, "GameSettingManager 싱글톤 인스턴스 생성", this);
             }
             else if (Instance != this)
             {
-                Debug.LogWarning("[GameSettingManager] 이미 인스턴스가 존재합니다. 중복 오브젝트를 제거합니다.");
+                LogManager.LogWarning(LogCategory.System, "GameSettingManager 이미 인스턴스가 존재합니다. 중복 오브젝트를 제거합니다.", this);
                 Destroy(gameObject);
             }
         }
@@ -72,7 +72,7 @@ namespace MyFolder._1._Scripts._5._Manager
             }
             
             UpdatePlayerCount();
-            Debug.Log("[GameSettingManager] 서버 시작 - 기본 설정 적용됨");
+            LogManager.Log(LogCategory.System, "GameSettingManager 서버 시작 - 기본 설정 적용됨", this);
         }
 
         public override void OnStartClient()
@@ -85,24 +85,24 @@ namespace MyFolder._1._Scripts._5._Manager
             
             syncSettings.OnChange += OnSettingChangedCallback;
             syncPlayerCount.OnChange += OnPlayerCountChangedCallback;
-            Debug.Log("[GameSettingManager] 클라이언트 시작 - 동기화 콜백 등록됨");
+            LogManager.Log(LogCategory.System, "GameSettingManager 클라이언트 시작 - 동기화 콜백 등록됨", this);
         }
         
         // ✅ FishNet 씬 전환 이벤트 핸들러 추가
         private void OnSceneLoadStart(FishNet.Managing.Scened.SceneLoadStartEventArgs args)
         {
-            Debug.Log($"[GameSettingManager] 씬 로딩 시작: {string.Join(", ", args.QueueData.GlobalScenes)}");
+            LogManager.Log(LogCategory.System, $"GameSettingManager 씬 로딩 시작: {string.Join(", ", args.QueueData.GlobalScenes)}", this);
         }
         
         private void OnSceneLoadEnd(FishNet.Managing.Scened.SceneLoadEndEventArgs args)
         {
-            Debug.Log($"[GameSettingManager] 씬 로딩 완료: {string.Join(", ", args.LoadedScenes)}");
+            LogManager.Log(LogCategory.System, $"GameSettingManager 씬 로딩 완료: {string.Join(", ", args.LoadedScenes)}", this);
             
             // 씬 전환 후에도 인스턴스 유지 확인
             if (Instance == null)
             {
                 Instance = this;
-                Debug.Log("[GameSettingManager] 씬 전환 후 인스턴스 복구됨");
+                LogManager.Log(LogCategory.System, "GameSettingManager 씬 전환 후 인스턴스 복구됨", this);
             }
         }
         
@@ -117,7 +117,7 @@ namespace MyFolder._1._Scripts._5._Manager
         private void UpdateGameSettingsServerRpc(GameSettings gameSettings)
         {
             syncSettings.Value = gameSettings;
-            Debug.Log("게임 설정 업데이트됨");
+            LogManager.Log(LogCategory.System, "게임 설정 업데이트됨", this);
         }
 
         public void RequestStartGame()
@@ -131,13 +131,13 @@ namespace MyFolder._1._Scripts._5._Manager
         {
             if (syncPlayerCount.Value < 2)
             {
-                Debug.LogWarning("최소 4명의 플레이어가 필요합니다");
+                LogManager.LogWarning(LogCategory.System, "최소 4명의 플레이어가 필요합니다", this);
                 return;
             }
             
             NotifyGameStartClientRpc();
             
-            Debug.Log("게임시작");
+            LogManager.Log(LogCategory.System, "게임시작", this);
         }
         
         // ✅ 게임 종료 요청 메서드 추가
@@ -150,14 +150,14 @@ namespace MyFolder._1._Scripts._5._Manager
         [ServerRpc(RequireOwnership = false)]
         private void EndGameServerRpc()
         {
-            Debug.Log("[GameSettingManager] 게임 종료 요청됨");
+            LogManager.Log(LogCategory.System, "GameSettingManager 게임 종료 요청됨", this);
             NotifyGameEndClientRpc();
         }
 
         [ObserversRpc]
         private void NotifyGameEndClientRpc()
         {
-            Debug.Log("[GameSettingManager] 게임 종료 알림");
+            LogManager.Log(LogCategory.System, "GameSettingManager 게임 종료 알림", this);
             OnGameEnded?.Invoke();
         }
 
@@ -204,7 +204,7 @@ namespace MyFolder._1._Scripts._5._Manager
             // ✅ 값이 실제로 변했을 때만 업데이트
             if (currentCount == 1 || syncPlayerCount.Value != currentCount)
             {
-                Debug.Log($"플레이어 수 변경: {syncPlayerCount.Value} → {currentCount}");
+                LogManager.Log(LogCategory.System, $"플레이어 수 변경: {syncPlayerCount.Value} → {currentCount}", this);
                 syncPlayerCount.Value = currentCount;
             }
         }
@@ -260,7 +260,7 @@ namespace MyFolder._1._Scripts._5._Manager
         {
             if (Instance != null)
             {
-                Debug.Log("[GameSettingManager] 싱글톤 인스턴스 수동 삭제 시작");
+                LogManager.Log(LogCategory.System, "GameSettingManager 싱글톤 인스턴스 수동 삭제 시작", Instance);
                 
                 // 이벤트 정리
                 Instance.OnSettingsChanged = null;
@@ -285,7 +285,7 @@ namespace MyFolder._1._Scripts._5._Manager
                 }
                 
                 Instance = null;
-                Debug.Log("[GameSettingManager] 싱글톤 인스턴스 삭제 완료");
+                LogManager.Log(LogCategory.System, "GameSettingManager 싱글톤 인스턴스 삭제 완료");
             }
         }
 
@@ -295,7 +295,7 @@ namespace MyFolder._1._Scripts._5._Manager
             string currentScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
             if (currentScene.Contains(sceneName))
             {
-                Debug.Log($"[GameSettingManager] {sceneName} 씬 감지 - 자동 정리 수행");
+                LogManager.Log(LogCategory.System, $"GameSettingManager {sceneName} 씬 감지 - 자동 정리 수행", Instance);
                 DestroyInstance();
             }
         }
@@ -305,7 +305,7 @@ namespace MyFolder._1._Scripts._5._Manager
         {
             if (!IsHostInitialized) return;
             
-            Debug.Log("[GameSettingManager] 게임 상태 리셋");
+            LogManager.Log(LogCategory.System, "GameSettingManager 게임 상태 리셋", this);
             
             // 설정을 기본값으로 되돌림
             if (IsServerInitialized)
@@ -333,7 +333,7 @@ namespace MyFolder._1._Scripts._5._Manager
         {
             syncSettings.OnChange -= OnSettingChangedCallback;
             syncPlayerCount.OnChange -= OnPlayerCountChangedCallback;
-            Debug.Log("[GameSettingManager] 클라이언트 정지 - 콜백 해제됨");
+            LogManager.Log(LogCategory.System, "GameSettingManager 클라이언트 정지 - 콜백 해제됨", this);
         }
 
         public override void OnStopServer()
@@ -356,7 +356,7 @@ namespace MyFolder._1._Scripts._5._Manager
                 StopCoroutine(updatePlayerCountCoroutine);
                 updatePlayerCountCoroutine = null;
             }
-            Debug.Log("[GameSettingManager] 서버 정지 - 리소스 정리 완료");
+            LogManager.Log(LogCategory.System, "GameSettingManager 서버 정지 - 리소스 정리 완료", this);
         }
 
         private void OnDestroy()
@@ -365,7 +365,7 @@ namespace MyFolder._1._Scripts._5._Manager
             if (Instance == this)
             {
                 Instance = null;
-                Debug.Log("[GameSettingManager] 인스턴스 해제됨");
+                LogManager.Log(LogCategory.System, "GameSettingManager 인스턴스 해제됨", this);
             }
         }
     }
