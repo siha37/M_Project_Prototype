@@ -177,7 +177,8 @@ public class NetworkSpawnerObject : NetworkBehaviour
         }
 
         // 타겟 설정 및 초기화
-        GameObject target = PlayerManager.Instance.GetPlayer();
+        NetworkObject targetNetworkObject = NetworkPlayerManager.Instance.GetRandomPlayer();
+        GameObject target = targetNetworkObject?.gameObject;
         enemy.TryGetComponent(out EnemyControll enemyControll);
         
         if (enemyControll && target)
