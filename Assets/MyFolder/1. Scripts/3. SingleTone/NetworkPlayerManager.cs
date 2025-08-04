@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
+using MyFolder._1._Scripts._0._Object._0._Agent._0._Player;
 using UnityEngine;
 
 namespace MyFolder._1._Scripts._3._SingleTone

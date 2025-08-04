@@ -1,6 +1,7 @@
+using MyFolder._1._Scripts._0._Object;
 using UnityEngine;
 
-public class SpawnerState : State
+public class SpawnerStatus : Status
 {
     protected override void Start()
     {

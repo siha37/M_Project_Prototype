@@ -45,31 +45,6 @@ public class EnemyConfig : ScriptableObject
     public float rotationSpeed = 5f;
 
 
-
-
-    [Header("=== 회피 기동 설정 ===")] 
-    
-    [Tooltip("회피 기동 활성화")]
-    public bool strafingAble =false;
-    
-    [Tooltip("회피 기동 거리")]
-    [Range(1f, 6f)]
-    public float strafeDistance = 3f;
-    
-    [Tooltip("회피 방향 변경 간격")]
-    [Range(1f, 5f)]
-    public float strafeChangeInterval = 2f;
-    
-    [Tooltip("회피 기동 속도 배율")]
-    [Range(0.5f, 2f)]
-    public float strafeSpeedMultiplier = 1.2f;
-    
-    [Tooltip("경로 업데이트 간격 (초)")]
-    [Range(0.1f, 2f)]
-    public float pathUpdateInterval = 0.5f;
-    
-    
-    
     [Header("=== 전투 설정 ===")]
     [Tooltip("타겟과의 최소 유지 거리")]
     [Range(1f, 5f)]
@@ -192,12 +167,6 @@ public class EnemyConfig : ScriptableObject
         {
             retreatDistance = minDistanceToTarget + 1f;
         }
-        
-        // 성능 관련 검증
-        if (aiUpdateInterval > pathUpdateInterval)
-        {
-            aiUpdateInterval = pathUpdateInterval * 0.5f;
-        }
     }
     
     /// <summary>
@@ -220,13 +189,10 @@ public class EnemyConfig : ScriptableObject
         loseTargetRange = 15f;
         fieldOfViewAngle = 90f;
         defaultSpeed = 3f;
-        pathUpdateInterval = 0.5f;
         patrolRadius = 8f;
         minDistanceToTarget = 2f;
         retreatDistance = 4f;
         aimPrecision = 0.1f;
-        strafeDistance = 3f;
-        strafeChangeInterval = 2f;
         
         LogManager.Log(LogCategory.Enemy, $"{name} 설정을 기본값으로 리셋했습니다.", this);
     }

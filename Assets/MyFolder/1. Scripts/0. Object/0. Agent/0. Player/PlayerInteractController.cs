@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using MyFolder._1._Scripts._0._Object._0._Agent._0._Player;
 
 public class PlayerInteractController : MonoBehaviour
 {
@@ -71,8 +72,8 @@ public class PlayerInteractController : MonoBehaviour
             else if (currentInteractableObject.CompareTag("Player"))
             {
                 // Player의 상태 확인
-                PlayerState playerState = currentInteractableObject.GetComponent<PlayerState>();
-                if (playerState != null && playerState.IsDead)
+                PlayerStatus playerStatus = currentInteractableObject.GetComponent<PlayerStatus>();
+                if (playerStatus != null && playerStatus.IsDead)
                 {
                     // 네트워크 동기화된 부활 처리
                     PlayerNetworkSync targetNetworkSync = currentInteractableObject.GetComponent<PlayerNetworkSync>();
@@ -93,28 +94,28 @@ public class PlayerInteractController : MonoBehaviour
                         {
                             StopCoroutine(reviveCoroutine);
                         }
-                        reviveCoroutine = StartCoroutine(RevivePlayer(playerState));
+                        reviveCoroutine = StartCoroutine(RevivePlayer(playerStatus));
                     }
                 }
             }
         }
     }
 
-    private IEnumerator RevivePlayer(PlayerState playerState)
+    private IEnumerator RevivePlayer(PlayerStatus playerStatus)
     {
         float elapsedTime = 0f;
         agentUI.StartReviveUI();
 
-        while (elapsedTime < PlayerState.reviveDelay)
+        while (elapsedTime < PlayerStatus.reviveDelay)
         {
             elapsedTime += Time.deltaTime;
-            float progress = elapsedTime / PlayerState.reviveDelay;
+            float progress = elapsedTime / PlayerStatus.reviveDelay;
             agentUI.UpdateReviveProgress(progress);
             yield return null;
         }
 
         // 부활 처리
-        playerState.Revive();
+        playerStatus.Revive();
         agentUI.EndReviveUI();
         reviveCoroutine = null;
     }
@@ -124,10 +125,10 @@ public class PlayerInteractController : MonoBehaviour
         float elapsedTime = 0f;
         agentUI.StartReviveUI();
 
-        while (elapsedTime < PlayerState.reviveDelay)
+        while (elapsedTime < PlayerStatus.reviveDelay)
         {
             elapsedTime += Time.deltaTime;
-            float progress = elapsedTime / PlayerState.reviveDelay;
+            float progress = elapsedTime / PlayerStatus.reviveDelay;
             agentUI.UpdateReviveProgress(progress);
             yield return null;
         }

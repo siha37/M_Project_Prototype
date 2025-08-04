@@ -1,11 +1,13 @@
 using UnityEngine;
 using System.Collections;
 using FishNet.Object;
+using MyFolder._1._Scripts._0._Object._0._Agent;
+using MyFolder._1._Scripts._0._Object._0._Agent._0._Player;
 
 public class PlayerControll : NetworkBehaviour
 {
     PlayerInputControll playerInputControll;
-    PlayerState state;
+    PlayerStatus status;
     Transform tf;
     Rigidbody2D rd2D;
     // ✅ AgentUI 참조 제거 (NetworkSync에서 처리)
@@ -34,7 +36,7 @@ public class PlayerControll : NetworkBehaviour
     public override void OnStartClient()
     {
         playerInputControll = GetComponent<PlayerInputControll>();
-        state = GetComponent<PlayerState>();
+        status = GetComponent<PlayerStatus>();
         // ✅ AgentUI 참조 제거
         networkSync = GetComponent<PlayerNetworkSync>();
         tf = transform;
@@ -100,7 +102,7 @@ public class PlayerControll : NetworkBehaviour
 
     void Move(Vector2 direction)
     {
-        rd2D.linearVelocity = new Vector2(direction.x, direction.y) * PlayerState.speed;
+        rd2D.linearVelocity = new Vector2(direction.x, direction.y) * PlayerStatus.speed;
     }
     
     void MoveStop()
@@ -178,7 +180,7 @@ public class PlayerControll : NetworkBehaviour
     private IEnumerator ShootDelay()
     {
         canShoot = false;
-        yield return new WaitForSeconds(AgentState.bulletDelay);
+        yield return new WaitForSeconds(AgentStatus.bulletDelay);
         canShoot = true;
     }
 
@@ -186,7 +188,7 @@ public class PlayerControll : NetworkBehaviour
     
     private void ReloadTrigger()
     {
-        if (!isReloading && state.bulletCurrentCount < AgentState.bulletMaxCount)
+        if (!isReloading && status.bulletCurrentCount < AgentStatus.bulletMaxCount)
         {
             // ✅ 네트워크 동기화만 사용 (폴백 방식 제거)
             if (networkSync != null)
