@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
@@ -16,7 +17,7 @@ public class EnemyCombat : NetworkBehaviour
     
     [Header("=== 발사 설정 ===")]
     [SerializeField] private Transform firePoint;
-    [SerializeField] private GameObject projectilePrefab;
+    [SerializeField] private Transform shotPivot;
     [SerializeField] private float projectileSpeed = 10f;
     [SerializeField] private float projectileDamage = 10f;
     
@@ -124,7 +125,7 @@ public class EnemyCombat : NetworkBehaviour
     private void Update()
     {
         // 서버에서만 전투 업데이트
-        if (!IsServer) return;
+        if (!IsServerInitialized) return;
         
         // 재장전 업데이트
         UpdateReload();
@@ -140,7 +141,7 @@ public class EnemyCombat : NetworkBehaviour
     /// </summary>
     public void AimAt(Vector3 targetPosition)
     {
-        if (!IsServer) return;
+        if (!IsServerInitialized) return;
         
         currentAimTarget = targetPosition;
         
@@ -157,7 +158,7 @@ public class EnemyCombat : NetworkBehaviour
         
         // 조준 적용
         syncLookAngle.Value = finalAngle;
-        transform.rotation = Quaternion.Euler(0, 0, finalAngle);
+        shotPivot.rotation = Quaternion.Euler(0, 0, finalAngle);
         
         LogManager.Log(LogCategory.Enemy, $"조준: {targetPosition} (각도: {finalAngle:F1}°)", this);
     }
@@ -167,7 +168,7 @@ public class EnemyCombat : NetworkBehaviour
     /// </summary>
     public bool TryShoot()
     {
-        if (!IsServer || !CanShoot) return false;
+        if (!IsServerInitialized || !CanShoot) return false;
         
         // 발사 쿨다운 체크
         if (Time.time - lastFireTime < fireRate) return false;
@@ -195,7 +196,7 @@ public class EnemyCombat : NetworkBehaviour
     /// </summary>
     public void StartReload()
     {
-        if (!IsServer || isReloading) return;
+        if (!IsServerInitialized || isReloading) return;
         
         isReloading = true;
         syncIsReloading.Value = true;
@@ -212,7 +213,7 @@ public class EnemyCombat : NetworkBehaviour
     /// </summary>
     public void ForceCompleteReload()
     {
-        if (!IsServer) return;
+        if (!IsServerInitialized) return;
         
         CompleteReload();
     }
@@ -222,7 +223,7 @@ public class EnemyCombat : NetworkBehaviour
     /// </summary>
     public void AddAmmo(int amount)
     {
-        if (!IsServer) return;
+        if (!IsServerInitialized) return;
         
         currentAmmo = Mathf.Min(currentAmmo + amount, maxAmmo);
         syncCurrentAmmo.Value = currentAmmo;
@@ -235,7 +236,7 @@ public class EnemyCombat : NetworkBehaviour
     /// </summary>
     public void SetAmmo(int amount)
     {
-        if (!IsServer) return;
+        if (!IsServerInitialized) return;
         
         currentAmmo = Mathf.Clamp(amount, 0, maxAmmo);
         syncCurrentAmmo.Value = currentAmmo;
@@ -246,13 +247,13 @@ public class EnemyCombat : NetworkBehaviour
     /// <summary>
     /// 발사 가능 여부 설정
     /// </summary>
-    public void SetCanShoot(bool canShoot)
+    public void SetCanShoot(bool _canShoot)
     {
-        if (!IsServer) return;
+        if (!IsServerInitialized) return;
         
-        this.canShoot = canShoot;
+        this.canShoot = _canShoot;
         
-        LogManager.Log(LogCategory.Enemy, $"발사 가능 설정: {canShoot}", this);
+        LogManager.Log(LogCategory.Enemy, $"발사 가능 설정: {_canShoot}", this);
     }
     
     /// <summary>
@@ -260,7 +261,7 @@ public class EnemyCombat : NetworkBehaviour
     /// </summary>
     public void SetFireRate(float newFireRate)
     {
-        if (!IsServer) return;
+        if (!IsServerInitialized) return;
         
         fireRate = Mathf.Max(0.1f, newFireRate);
         
@@ -270,13 +271,19 @@ public class EnemyCombat : NetworkBehaviour
     /// <summary>
     /// 재장전 시간 설정
     /// </summary>
-    public void SetReloadTime(float newReloadTime)
+    public void SetAimPrecision(float precision)
     {
-        if (!IsServer) return;
+        if (!IsServerInitialized) return;
+
+        aimPrecision = precision;
         
-        reloadTime = Mathf.Max(0.5f, newReloadTime);
-        
-        LogManager.Log(LogCategory.Enemy, $"재장전 시간 변경: {reloadTime}", this);
+        LogManager.Log(LogCategory.Enemy, $"정확도 변경: {reloadTime}", this);
+    }
+
+    public void SetReloadTime(float _reloadTime)
+    {
+        if (!IsServerInitialized) return;
+        reloadTime = _reloadTime;
     }
     
     // ========== Private Methods ==========
@@ -286,35 +293,57 @@ public class EnemyCombat : NetworkBehaviour
     /// </summary>
     private void FireProjectile()
     {
-        if (projectilePrefab == null || firePoint == null) return;
+        if (!firePoint) return;
         
         // 발사 위치와 방향 계산
         Vector3 firePosition = firePoint.position;
         Vector3 fireDirection = firePoint.right; // Z축 기준 오른쪽 방향
-        
-        // 발사체 생성
-        GameObject projectileObj = Instantiate(projectilePrefab, firePosition, Quaternion.identity);
-        
-        // 발사체 설정
-        Projectile projectile = projectileObj.GetComponent<Projectile>();
-        if (projectile != null)
+        float angle = Mathf.Atan2(fireDirection.y, fireDirection.x) * Mathf.Rad2Deg;
+        // ✅ BulletManager 초기화 확인 및 대기
+        if (!BulletManager.Instance)
         {
-            projectile.Initialize(fireDirection, projectileSpeed, projectileDamage, gameObject);
+            LogManager.LogWarning(LogCategory.Projectile, $"{gameObject.name} BulletManager 초기화 대기 중...", this);
+            StartCoroutine(WaitForBulletManagerAndShoot());
+            return;
         }
         
-        // 네트워크 스폰 (FishNet)
-        if (IsServer)
-        {
-            NetworkObject projectileNetwork = projectileObj.GetComponent<NetworkObject>();
-            if (projectileNetwork != null)
-            {
-                NetworkManager.ServerManager.Spawn(projectileNetwork);
-            }
-        }
         
-        LogManager.Log(LogCategory.Enemy, $"발사체 생성: {firePosition} → {fireDirection}", this);
+        // ✅ BulletManager Pool 시스템 활용 (성능 최적화)
+        BulletManager.Instance.FireBulletWithConnection(
+            firePosition,
+            angle, 
+            AgentState.bulletSpeed,
+            AgentState.bulletDamage,
+            AgentState.bulletRange,
+            base.Owner  // ✅ NetworkConnection 전달
+        );
+        
     }
     
+    
+    // ✅ BulletManager 초기화 대기 코루틴
+    private IEnumerator WaitForBulletManagerAndShoot()
+    {
+        float waitTime = 0f;
+        const float maxWaitTime = 5f; // 최대 5초 대기
+        
+        while (!BulletManager.Instance && waitTime < maxWaitTime)
+        {
+            yield return new WaitForSeconds(0.1f);
+            waitTime += 0.1f;
+        }
+        
+        if (BulletManager.Instance)
+        {
+            // ✅ 초기화 완료 후 정상 발사 처리
+            LogManager.Log(LogCategory.Projectile, $"{gameObject.name} BulletManager 초기화 완료 - 발사 재시도", this);
+            FireProjectile();
+        }
+        else
+        {
+            LogManager.LogError(LogCategory.Projectile, $"{gameObject.name} BulletManager 초기화 타임아웃! 발사 취소", this);
+        }
+    }
     /// <summary>
     /// 재장전 업데이트
     /// </summary>
@@ -338,7 +367,7 @@ public class EnemyCombat : NetworkBehaviour
     /// </summary>
     private void CompleteReload()
     {
-        if (!IsServer) return;
+        if (!IsServerInitialized) return;
         
         isReloading = false;
         syncIsReloading.Value = false;

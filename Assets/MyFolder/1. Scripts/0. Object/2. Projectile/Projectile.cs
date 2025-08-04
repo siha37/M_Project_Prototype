@@ -30,7 +30,7 @@ public class Projectile : NetworkBehaviour
     public override void OnStartClient()
     {
         base.OnStartClient();
-        if (!IsServer)
+        if (!IsServerInitialized)
         {
             // 클라이언트에서는 물리 비활성화 (네트워크 동기화만)
             if (rb == null) rb = GetComponent<Rigidbody2D>();
@@ -49,10 +49,15 @@ public class Projectile : NetworkBehaviour
         direction = bulletDirection.normalized;
         
         // 서버에서만 생명주기 관리
-        if (IsServer)
+        if (IsServerInitialized)
         {
             StartCoroutine(DestroyAfterTime(lifetime));
         }
+    }
+
+    public void Initialize(float bulletDamage, float bulletLifetime, Vector3 bulletDirection)
+    {
+        
     }
     
     // ✅ Owner GameObject 안전하게 가져오기
@@ -84,7 +89,7 @@ public class Projectile : NetworkBehaviour
     private IEnumerator DestroyAfterTime(float time)
     {
         yield return new WaitForSeconds(time);
-        if (IsServer)
+        if (IsServerInitialized)
         {
             ServerManager.Despawn(gameObject);
         }
@@ -93,7 +98,7 @@ public class Projectile : NetworkBehaviour
     private void OnTriggerEnter2D(Collider2D collision)
     {
         // 서버에서만 충돌 처리
-        if (!IsServer) return;
+        if (!IsServerInitialized) return;
         
         GameObject hitObject = collision.gameObject;
         GameObject ownerGameObject = GetOwnerGameObject();
@@ -130,7 +135,7 @@ public class Projectile : NetworkBehaviour
     
     private void ApplyDamage(GameObject target, Vector3 hitPoint)
     {
-        if (!IsServer) return;
+        if (!IsServerInitialized) return;
         
         Vector2 hitDirection = rb.linearVelocity.normalized;
         
@@ -139,16 +144,7 @@ public class Projectile : NetworkBehaviour
         if (agentSync != null)
         {
             agentSync.RequestTakeDamage(damage, hitDirection, ownerConnection);
-                                LogManager.Log(LogCategory.Projectile, $"{gameObject.name} {target.name}에게 {damage} 데미지 (공격자: {ownerConnection?.ClientId})", this);
-        }
-        else
-        {
-            // 기존 방식으로 폴백 (네트워크 동기화가 없는 경우)
-            State targetState = target.GetComponent<State>();
-            if (targetState != null)
-            {
-                targetState.TakeDamage(damage, hitDirection);
-            }
+            LogManager.Log(LogCategory.Projectile, $"{gameObject.name} {target.name}에게 {damage} 데미지 (공격자: {ownerConnection?.ClientId})", this);
         }
         
         // 히트 이펙트 표시
@@ -157,7 +153,7 @@ public class Projectile : NetworkBehaviour
     
     private void DestroyBullet()
     {
-        if (IsServer)
+        if (IsServerInitialized)
         {
             ServerManager.Despawn(gameObject);
         }

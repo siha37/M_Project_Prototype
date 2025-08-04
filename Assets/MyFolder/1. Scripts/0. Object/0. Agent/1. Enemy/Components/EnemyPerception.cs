@@ -1,22 +1,18 @@
+using System.Collections.Generic;
 using UnityEngine;
 using FishNet.Object;
+using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Data;
 
 /// <summary>
-/// 적 인지 시스템 컴포넌트
+/// 적 인지 시스템 컴포넌트 (2D 버전)
 /// 시야 확인, 장애물 감지, 타겟 탐지 등을 담당
 /// </summary>
 public class EnemyPerception : NetworkBehaviour
 {
-    [Header("=== 인지 설정 ===")]
-    [SerializeField] private float detectionRange = 10f;
-    [SerializeField] private float fieldOfViewAngle = 90f;
-    [SerializeField] private LayerMask targetLayer = -1;
-    [SerializeField] private LayerMask obstacleLayer = -1;
+    [SerializeField] EnemyConfig config;
     
     [Header("=== 시야 설정 ===")]
     [SerializeField] private Transform eyes; // 시야 시작점
-    [SerializeField] private float visionCheckInterval = 0.1f;
-    [SerializeField] private int visionRayCount = 8; // 시야 확인용 레이 개수
     
     [Header("=== 디버그 ===")]
     [SerializeField] private bool showVisionCone = true;
@@ -29,9 +25,9 @@ public class EnemyPerception : NetworkBehaviour
     private Vector3 lastSeenPosition;
     private Transform currentTarget;
     
-    // 성능 최적화
-    private Collider[] detectedTargets;
-    private int maxDetectedTargets = 10;
+    // 성능 최적화 (2D용)
+    private Collider2D[] detectedTargets;
+    private const int maxDetectedTargets = 10;
     
     // 이벤트
     public System.Action<Transform> OnTargetInSight;
@@ -43,12 +39,12 @@ public class EnemyPerception : NetworkBehaviour
     /// <summary>
     /// 탐지 범위
     /// </summary>
-    public float DetectionRange => detectionRange;
+    public float DetectionRange => config.detectionRange;
     
     /// <summary>
     /// 시야각
     /// </summary>
-    public float FieldOfViewAngle => fieldOfViewAngle;
+    public float FieldOfViewAngle => config.fieldOfViewAngle;
     
     /// <summary>
     /// 현재 시야에 타겟이 있는지 여부
@@ -78,13 +74,13 @@ public class EnemyPerception : NetworkBehaviour
                 // Eyes가 없으면 자식으로 생성
                 GameObject eyesObj = new GameObject("Eyes");
                 eyesObj.transform.SetParent(transform);
-                eyesObj.transform.localPosition = Vector3.up * 0.5f; // 약간 위쪽
+                eyesObj.transform.localPosition = Vector3.zero; // 2D에서는 Z축 사용 안함
                 eyes = eyesObj.transform;
             }
         }
         
-        // 탐지 배열 초기화
-        detectedTargets = new Collider[maxDetectedTargets];
+        // 탐지 배열 초기화 (2D용)
+        detectedTargets = new Collider2D[maxDetectedTargets];
         
         LogManager.Log(LogCategory.Enemy, "EnemyPerception 컴포넌트 초기화 완료", this);
     }
@@ -104,10 +100,10 @@ public class EnemyPerception : NetworkBehaviour
     private void Update()
     {
         // 서버에서만 인지 업데이트
-        if (!IsServer) return;
+        if (!IsServerInitialized) return;
         
         // 시야 확인 간격 체크
-        if (Time.time - lastVisionCheckTime >= visionCheckInterval)
+        if (Time.time - lastVisionCheckTime >= config.visionCheckInterval)
         {
             UpdatePerception();
             lastVisionCheckTime = Time.time;
@@ -121,11 +117,11 @@ public class EnemyPerception : NetworkBehaviour
     /// </summary>
     public bool LineOfSight(Transform target)
     {
-        if (target == null) return false;
+        if (!target) return false;
         
-        // 거리 확인
-        float distance = Vector3.Distance(transform.position, target.position);
-        if (distance > detectionRange) return false;
+        // 거리 확인 (2D 거리 계산)
+        float distance = Vector2.Distance(transform.position, target.position);
+        if (distance > DetectionRange) return false;
         
         // 시야각 확인
         if (!IsInFieldOfView(target.position)) return false;
@@ -133,6 +129,8 @@ public class EnemyPerception : NetworkBehaviour
         // 장애물 확인
         return !IsObstructed(target.position);
     }
+
+    public bool LineOfSight() { return LineOfSight(CurrentTarget); }
     
     /// <summary>
     /// 범위 내 모든 타겟 탐지
@@ -141,13 +139,13 @@ public class EnemyPerception : NetworkBehaviour
     {
         if (!IsServerOnlyInitialized) return new Transform[0];
         
-        // 범위 내 콜라이더 탐지
-        int hitCount = Physics.OverlapSphereNonAlloc(transform.position, detectionRange, detectedTargets, targetLayer);
+        // 범위 내 콜라이더 탐지 (2D)
+        detectedTargets = Physics2D.OverlapCircleAll(transform.position, DetectionRange, config.targetLayer,0);
         
         // 유효한 타겟만 필터링
-        System.Collections.Generic.List<Transform> validTargets = new System.Collections.Generic.List<Transform>();
+        List<Transform> validTargets = new List<Transform>();
         
-        for (int i = 0; i < hitCount; i++)
+        for (int i = 0; i < detectedTargets.Length; i++)
         {
             Transform target = detectedTargets[i].transform;
             
@@ -175,7 +173,7 @@ public class EnemyPerception : NetworkBehaviour
         
         foreach (Transform target in targets)
         {
-            float distance = Vector3.Distance(transform.position, target.position);
+            float distance = Vector2.Distance(transform.position, target.position);
             if (distance < closestDistance)
             {
                 closestDistance = distance;
@@ -191,12 +189,24 @@ public class EnemyPerception : NetworkBehaviour
     /// </summary>
     public bool IsInFieldOfView(Vector3 position)
     {
-        Vector3 directionToTarget = (position - transform.position).normalized;
-        Vector3 forward = transform.forward;
+        Vector2 directionToTarget = ((Vector2)position - (Vector2)transform.position).normalized;
         
-        float angle = Vector3.Angle(forward, directionToTarget);
+        // 현재 타겟이 있으면 타겟 방향을 기준으로, 없으면 기본 방향 사용
+        Vector2 baseDirection;
+        if (CurrentTarget)
+        {
+            // 현재 타겟 방향을 기준으로 설정
+            baseDirection = ((Vector2)CurrentTarget.position - (Vector2)transform.position).normalized;
+        }
+        else
+        {
+            // 기본 방향 (오른쪽)
+            baseDirection = Vector2.right;
+        }
         
-        return angle <= fieldOfViewAngle * 0.5f;
+        float angle = Vector2.Angle(baseDirection, directionToTarget);
+        
+        return angle <= FieldOfViewAngle * 0.5f;
     }
     
     /// <summary>
@@ -204,13 +214,14 @@ public class EnemyPerception : NetworkBehaviour
     /// </summary>
     public bool IsObstructed(Vector3 position)
     {
-        if (eyes == null) return false;
+        if (!eyes) return false;
         
-        Vector3 direction = (position - eyes.position).normalized;
-        float distance = Vector3.Distance(eyes.position, position);
+        Vector2 direction = ((Vector2)position - (Vector2)eyes.position).normalized;
+        float distance = Vector2.Distance(eyes.position, position);
         
-        // 레이캐스트로 장애물 확인
-        if (Physics.Raycast(eyes.position, direction, out RaycastHit hit, distance, obstacleLayer))
+        // 레이캐스트로 장애물 확인 (2D)
+        RaycastHit2D hit = Physics2D.Raycast(eyes.position, direction, distance, config.obstacleLayer);
+        if (hit.collider)
         {
             return true; // 장애물이 있음
         }
@@ -219,65 +230,32 @@ public class EnemyPerception : NetworkBehaviour
     }
     
     /// <summary>
-    /// 탐지 범위 설정
+    /// 타겟 설정 (시야각 기준점 업데이트용)
     /// </summary>
-    public void SetDetectionRange(float range)
+    public void SetTarget(Transform oldtarget,Transform newtarget)
     {
-        if (!IsServer) return;
+        currentTarget = newtarget;
         
-        detectionRange = Mathf.Max(1f, range);
-        
-        LogManager.Log(LogCategory.Enemy, $"탐지 범위 변경: {detectionRange}", this);
+        if (newtarget)
+        {
+            lastSeenPosition = newtarget.position;
+            LogManager.Log(LogCategory.Enemy, $"EnemyPerception 타겟 설정: {newtarget.name}", this);
+        }
+        else
+        {
+            LogManager.Log(LogCategory.Enemy, "EnemyPerception 타겟 제거", this);
+        }
     }
-    
-    /// <summary>
-    /// 시야각 설정
-    /// </summary>
-    public void SetFieldOfViewAngle(float angle)
+
+    public void SetConfig(EnemyConfig _config)
     {
-        if (!IsServer) return;
-        
-        fieldOfViewAngle = Mathf.Clamp(angle, 10f, 360f);
-        
-        LogManager.Log(LogCategory.Enemy, $"시야각 변경: {fieldOfViewAngle}", this);
+        this.config = _config; 
     }
-    
-    /// <summary>
-    /// 타겟 레이어 설정
-    /// </summary>
-    public void SetTargetLayer(LayerMask layer)
+
+    public void SetEvent(EnemyAI ai)
     {
-        if (!IsServer) return;
-        
-        targetLayer = layer;
-        
-        LogManager.Log(LogCategory.Enemy, $"타겟 레이어 변경: {layer}", this);
+        ai.Events.OnTargetChanged += SetTarget;
     }
-    
-    /// <summary>
-    /// 장애물 레이어 설정
-    /// </summary>
-    public void SetObstacleLayer(LayerMask layer)
-    {
-        if (!IsServer) return;
-        
-        obstacleLayer = layer;
-        
-        LogManager.Log(LogCategory.Enemy, $"장애물 레이어 변경: {layer}", this);
-    }
-    
-    /// <summary>
-    /// 시야 확인 간격 설정
-    /// </summary>
-    public void SetVisionCheckInterval(float interval)
-    {
-        if (!IsServer) return;
-        
-        visionCheckInterval = Mathf.Max(0.05f, interval);
-        
-        LogManager.Log(LogCategory.Enemy, $"시야 확인 간격 변경: {visionCheckInterval}", this);
-    }
-    
     // ========== Private Methods ==========
     
     /// <summary>
@@ -288,30 +266,30 @@ public class EnemyPerception : NetworkBehaviour
         // 현재 타겟에 대한 시야 확인
         bool currentLineOfSight = false;
         
-        if (currentTarget != null)
+        if (CurrentTarget)
         {
-            currentLineOfSight = LineOfSight(currentTarget);
+            currentLineOfSight = LineOfSight(CurrentTarget);
             
             if (currentLineOfSight)
             {
-                lastSeenPosition = currentTarget.position;
+                lastSeenPosition = CurrentTarget.position;
             }
         }
         
         // 시야 상태 변경 확인
-        if (hasLineOfSight != currentLineOfSight)
+        if (HasLineOfSight != currentLineOfSight)
         {
             hasLineOfSight = currentLineOfSight;
             
-            if (hasLineOfSight)
+            if (HasLineOfSight)
             {
-                OnTargetInSight?.Invoke(currentTarget);
-                LogManager.Log(LogCategory.Enemy, $"타겟 시야 확보: {currentTarget?.name}", this);
+                OnTargetInSight?.Invoke(CurrentTarget);
+                LogManager.Log(LogCategory.Enemy, $"타겟 시야 확보: {CurrentTarget?.name}", this);
             }
             else
             {
-                OnTargetOutOfSight?.Invoke(currentTarget);
-                LogManager.Log(LogCategory.Enemy, $"타겟 시야 상실: {currentTarget?.name}", this);
+                OnTargetOutOfSight?.Invoke(CurrentTarget);
+                LogManager.Log(LogCategory.Enemy, $"타겟 시야 상실: {CurrentTarget?.name}", this);
             }
         }
     }
@@ -323,14 +301,26 @@ public class EnemyPerception : NetworkBehaviour
     {
         if (eyes == null) return;
         
-        float angleStep = fieldOfViewAngle / visionRayCount;
-        
-        for (int i = 0; i < visionRayCount; i++)
+        // 기준 방향 결정 (타겟이 있으면 타겟 방향, 없으면 기본 방향)
+        Vector2 baseDirection;
+        if (CurrentTarget != null)
         {
-            float angle = -fieldOfViewAngle * 0.5f + angleStep * i;
-            Vector3 direction = Quaternion.Euler(0, angle, 0) * transform.forward;
+            baseDirection = ((Vector2)CurrentTarget.position - (Vector2)transform.position).normalized;
+        }
+        else
+        {
+            baseDirection = Vector2.right;
+        }
+        
+        float angleStep = FieldOfViewAngle / config.visionRayCount;
+        
+        for (int i = 0; i < config.visionRayCount; i++)
+        {
+            float angle = -FieldOfViewAngle * 0.5f + angleStep * i;
+            Vector2 direction = Quaternion.Euler(0, 0, angle) * baseDirection; // 타겟 방향 기준 회전
             
-            if (Physics.Raycast(eyes.position, direction, out RaycastHit hit, detectionRange, obstacleLayer))
+            RaycastHit2D hit = Physics2D.Raycast(eyes.position, direction, DetectionRange, config.obstacleLayer);
+            if (hit.collider != null)
             {
                 OnObstacleDetected?.Invoke(hit.point);
                 break; // 첫 번째 장애물만 처리
@@ -340,32 +330,43 @@ public class EnemyPerception : NetworkBehaviour
     
     // ========== Gizmos ==========
     
-    private void OnDrawGizmos()
+   private void OnDrawGizmos()
     {
         if (!showDetectionRange && !showVisionCone) return;
         
-        // 탐지 범위 표시
+        // 탐지 범위 표시 (2D 원)
         if (showDetectionRange)
         {
             Gizmos.color = Color.blue;
-            Gizmos.DrawWireSphere(transform.position, detectionRange);
+            Gizmos.DrawWireSphere(transform.position, DetectionRange);
         }
         
-        // 시야각 표시
+        // 시야각 표시 (타겟 방향 기준)
         if (showVisionCone)
         {
-            Gizmos.color = hasLineOfSight ? Color.green : Color.yellow;
+            Gizmos.color = HasLineOfSight ? Color.green : Color.yellow;
+            
+            // 기준 방향 결정
+            Vector2 baseDirection;
+            if (CurrentTarget != null)
+            {
+                baseDirection = ((Vector2)CurrentTarget.position - (Vector2)transform.position).normalized;
+            }
+            else
+            {
+                baseDirection = Vector2.right;
+            }
             
             int segments = 16;
-            float angleStep = fieldOfViewAngle / segments;
+            float angleStep = FieldOfViewAngle / segments;
             
             Vector3 previousPoint = transform.position;
             
             for (int i = 0; i <= segments; i++)
             {
-                float angle = -fieldOfViewAngle * 0.5f + angleStep * i;
-                Vector3 direction = Quaternion.Euler(0, angle, 0) * transform.forward;
-                Vector3 point = transform.position + direction * detectionRange;
+                float angle = -FieldOfViewAngle * 0.5f + angleStep * i;
+                Vector2 direction = Quaternion.Euler(0, 0, angle) * baseDirection; // 타겟 방향 기준 회전
+                Vector3 point = transform.position + (Vector3)direction * DetectionRange;
                 
                 if (i > 0)
                 {
@@ -376,8 +377,11 @@ public class EnemyPerception : NetworkBehaviour
             }
             
             // 시야각의 양 끝점을 시작점과 연결
-            Vector3 leftPoint = transform.position + Quaternion.Euler(0, -fieldOfViewAngle * 0.5f, 0) * transform.forward * detectionRange;
-            Vector3 rightPoint = transform.position + Quaternion.Euler(0, fieldOfViewAngle * 0.5f, 0) * transform.forward * detectionRange;
+            Vector2 leftDirection = Quaternion.Euler(0, 0, -FieldOfViewAngle * 0.5f) * baseDirection;
+            Vector2 rightDirection = Quaternion.Euler(0, 0, FieldOfViewAngle * 0.5f) * baseDirection;
+            
+            Vector3 leftPoint = transform.position + (Vector3)leftDirection * DetectionRange;
+            Vector3 rightPoint = transform.position + (Vector3)rightDirection * DetectionRange;
             
             Gizmos.DrawLine(transform.position, leftPoint);
             Gizmos.DrawLine(transform.position, rightPoint);
@@ -388,21 +392,21 @@ public class EnemyPerception : NetworkBehaviour
         {
             Gizmos.color = Color.red;
             
-            if (currentTarget != null)
+            if (CurrentTarget != null)
             {
-                Vector3 direction = (currentTarget.position - eyes.position).normalized;
-                float distance = Vector3.Distance(eyes.position, currentTarget.position);
+                Vector2 direction = ((Vector2)CurrentTarget.position - (Vector2)eyes.position).normalized;
+                float distance = Vector2.Distance(eyes.position, CurrentTarget.position);
                 
-                Gizmos.DrawRay(eyes.position, direction * distance);
+                Gizmos.DrawRay(eyes.position, (Vector3)direction * distance);
             }
         }
         
         // 마지막으로 본 위치 표시
-        if (lastSeenPosition != Vector3.zero)
+        if (LastSeenPosition != Vector3.zero)
         {
             Gizmos.color = Color.gray;
-            Gizmos.DrawWireSphere(lastSeenPosition, 0.5f);
-            Gizmos.DrawLine(transform.position, lastSeenPosition);
+            Gizmos.DrawWireSphere(LastSeenPosition, 0.5f);
+            Gizmos.DrawLine(transform.position, LastSeenPosition);
         }
     }
     
@@ -415,13 +419,15 @@ public class EnemyPerception : NetworkBehaviour
         {
             eyes = transform.Find("Eyes");
         }
-        
+
+        if (config)
+            return;
         // 설정값 검증
-        if (detectionRange < 1f) detectionRange = 10f;
-        if (fieldOfViewAngle < 10f) fieldOfViewAngle = 90f;
-        if (fieldOfViewAngle > 360f) fieldOfViewAngle = 360f;
-        if (visionCheckInterval < 0.05f) visionCheckInterval = 0.1f;
-        if (visionRayCount < 3) visionRayCount = 8;
-        if (visionRayCount > 20) visionRayCount = 20;
+        if (DetectionRange < 1f) config.detectionRange = 10f;
+        if (FieldOfViewAngle < 10f) config.fieldOfViewAngle = 90f;
+        if (FieldOfViewAngle > 360f) config.fieldOfViewAngle = 360f;
+        if (config.visionCheckInterval < 0.05f) config.visionCheckInterval = 0.1f;
+        if (config.visionRayCount < 3) config.visionRayCount = 8;
+        if (config.visionRayCount > 20) config.visionRayCount = 20;
     }
 } 

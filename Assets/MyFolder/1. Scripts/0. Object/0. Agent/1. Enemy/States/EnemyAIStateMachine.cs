@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Data;
 using UnityEngine;
 
 /// <summary>
@@ -87,7 +88,7 @@ public class EnemyAIStateMachine
     /// </summary>
     public void Update()
     {
-        if (currentState != null && ownerAI != null)
+        if (currentState != null && ownerAI)
         {
             currentState.Update(ownerAI);
         }
@@ -98,7 +99,7 @@ public class EnemyAIStateMachine
     /// </summary>
     public void FixedUpdate()
     {
-        if (currentState != null && ownerAI != null)
+        if (currentState != null && ownerAI)
         {
             currentState.FixedUpdate(ownerAI);
         }

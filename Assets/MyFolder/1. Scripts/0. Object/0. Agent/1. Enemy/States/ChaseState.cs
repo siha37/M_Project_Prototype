@@ -1,3 +1,4 @@
+using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Data;
 using UnityEngine;
 
 /// <summary>
@@ -25,14 +26,14 @@ public class ChaseState : EnemyAIState
         targetLostTime = 0f;
         hasLostTarget = false;
         
-        if (ai.CurrentTarget != null)
+        if (ai.CurrentTarget)
         {
             lastKnownTargetPosition = ai.CurrentTarget.position;
         }
         
         // 추적 속도로 변경
         var config = GetConfig(ai);
-        if (config != null)
+        if (config)
         {
             ai.Movement?.SetSpeed(config.chaseSpeed);
             ai.Movement?.SetStoppingDistance(config.attackRange * 0.8f); // 공격 범위보다 약간 가깝게
@@ -45,7 +46,7 @@ public class ChaseState : EnemyAIState
     public override void Update(EnemyAI ai)
     {
         var config = GetConfig(ai);
-        if (config == null) return;
+        if (!config) return;
         
         // 타겟 유효성 확인
         if (!IsTargetValid(ai))
@@ -60,7 +61,7 @@ public class ChaseState : EnemyAIState
         if (distanceToTarget <= config.attackRange)
         {
             // 시야 확인
-            if (ai.Perception != null && ai.Perception.LineOfSight(ai.CurrentTarget))
+            if (ai.Perception && ai.Perception.LineOfSight(ai.CurrentTarget))
             {
                 Log(ai, $"공격 범위 진입 - 거리: {distanceToTarget:F1}m");
                 ai.ChangeState(EnemyAIStateType.Attack);
@@ -71,15 +72,6 @@ public class ChaseState : EnemyAIState
                 Log(ai, "공격 범위 내이지만 시야가 막힘 - 계속 추적", EnemyConfig.LogLevel.Verbose);
             }
         }
-        
-        // 너무 멀어졌는지 확인
-        if (distanceToTarget > config.loseTargetRange)
-        {
-            Log(ai, $"타겟이 너무 멀어짐 - 거리: {distanceToTarget:F1}m");
-            HandleTargetLost(ai);
-            return;
-        }
-        
         // 추적 이동 처리
         HandleChaseMovement(ai);
     }
@@ -90,9 +82,9 @@ public class ChaseState : EnemyAIState
         
         // 이동 속도 원래대로 복구
         var config = GetConfig(ai);
-        if (config != null)
+        if (config)
         {
-            ai.Movement?.SetSpeed(config.normalSpeed);
+            ai.Movement?.SetSpeed(config.defaultSpeed);
             ai.Movement?.SetStoppingDistance(1f); // 기본값으로 복구
         }
         
@@ -180,7 +172,7 @@ public class ChaseState : EnemyAIState
             ai.CurrentTarget?.position ?? lastKnownTargetPosition);
         
         syncData.isChasing = true;
-        syncData.hasValidTarget = ai.CurrentTarget != null;
+        syncData.hasValidTarget = ai.CurrentTarget;
         
         return syncData;
     }
@@ -192,11 +184,11 @@ public class ChaseState : EnemyAIState
     /// </summary>
     private bool IsTargetValid(EnemyAI ai)
     {
-        if (ai.CurrentTarget == null) return false;
+        if (!ai.CurrentTarget) return false;
         
         // 타겟이 살아있는지 확인 (PlayerNetworkSync의 IsDead 확인)
         var targetNetworkSync = ai.CurrentTarget.GetComponent<PlayerNetworkSync>();
-        if (targetNetworkSync != null && targetNetworkSync.IsDead)
+        if (targetNetworkSync && targetNetworkSync.IsDead())
         {
             Log(ai, "타겟이 사망함");
             return false;

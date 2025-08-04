@@ -1,3 +1,5 @@
+using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Data;
+using MyFolder._1._Scripts._3._SingleTone;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -31,9 +33,9 @@ public class PatrolState : EnemyAIState
         
         // 이동 속도를 일반 속도로 설정
         var config = GetConfig(ai);
-        if (config != null)
+        if (config)
         {
-            ai.Movement?.SetSpeed(config.normalSpeed);
+            ai.Movement?.SetSpeed(config.defaultSpeed);
         }
         
         // 이벤트 발생
@@ -43,7 +45,7 @@ public class PatrolState : EnemyAIState
     public override void Update(EnemyAI ai)
     {
         var config = GetConfig(ai);
-        if (config == null) return;
+        if (!config) return;
         
         // 타겟 탐지 확인 (최우선)
         if (CheckForTargets(ai))
@@ -131,7 +133,7 @@ public class PatrolState : EnemyAIState
     private bool CheckForTargets(EnemyAI ai)
     {
         var config = GetConfig(ai);
-        if (config == null) return false;
+        if (!config) return false;
         
         // NetworkPlayerManager에서 살아있는 플레이어들을 가져옴
         var alivePlayers = NetworkPlayerManager.Instance?.GetAlivePlayers();
@@ -143,14 +145,9 @@ public class PatrolState : EnemyAIState
         
         foreach (var playerObj in alivePlayers)
         {
-            if (playerObj == null) continue;
+            if (!playerObj) continue;
             
             float distance = Vector3.Distance(ai.transform.position, playerObj.transform.position);
-            
-            // 탐지 범위 내에 있고, 시야에 있는지 확인
-            if (distance <= config.detectionRange && 
-                ai.Perception != null && 
-                ai.Perception.LineOfSight(playerObj.transform))
             {
                 if (distance < closestDistance)
                 {
@@ -161,7 +158,7 @@ public class PatrolState : EnemyAIState
         }
         
         // 타겟을 발견했다면
-        if (closestTarget != null)
+        if (closestTarget)
         {
             Log(ai, $"타겟 발견: {closestTarget.name} (거리: {closestDistance:F1}m)");
             
@@ -185,8 +182,8 @@ public class PatrolState : EnemyAIState
     /// </summary>
     private void HandlePatrolMovement(EnemyAI ai)
     {
-        var config = GetConfig(ai);
-        if (config == null) return;
+        EnemyConfig config = GetConfig(ai);
+        if (!config) return;
         
         // 대기 중인 경우
         if (isWaitingAtPatrolPoint)
@@ -201,7 +198,7 @@ public class PatrolState : EnemyAIState
         }
         
         // 순찰 지점에 도달했는지 확인
-        if (ai.Movement != null && ai.Movement.HasReachedDestination())
+        if (ai.Movement && ai.Movement.HasReachedDestination)
         {
             // 순찰 지점에 도달 - 잠시 대기
             isWaitingAtPatrolPoint = true;
@@ -220,12 +217,12 @@ public class PatrolState : EnemyAIState
     private void SetNewPatrolTarget(EnemyAI ai)
     {
         var config = GetConfig(ai);
-        if (config == null) return;
+        if (!config) return;
         
         Vector3 newTarget = GetRandomPatrolPoint(ai, config.patrolRadius);
         
         // 이동 명령
-        if (ai.Movement != null)
+        if (ai.Movement)
         {
             ai.Movement.MoveTo(newTarget);
             currentPatrolTarget = newTarget;

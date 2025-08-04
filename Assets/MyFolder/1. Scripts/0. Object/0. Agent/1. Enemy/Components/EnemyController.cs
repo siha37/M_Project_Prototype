@@ -297,21 +297,25 @@ public class EnemyController : NetworkBehaviour
             // AI 설정을 각 컴포넌트에 적용
             if (movement != null)
             {
-                movement.SetSpeed(config.normalSpeed);
-                movement.SetStoppingDistance(1f);
+                movement.SetSpeed(config.defaultSpeed);
+                movement.SetStoppingDistance(config.stoppingDistance);
+                movement.SetRotationSpeed(config.rotationSpeed);
+                movement.SetStrafeDistance(config.strafeDistance);
+                movement.SetStrafeSpeedMultiplier(config.strafeSpeedMultiplier);
+                movement.SetStrafeChangeInterval(config.strafeChangeInterval);
+                movement.SetAgent();
             }
             
             if (perception != null)
             {
-                perception.SetDetectionRange(config.detectionRange);
-                perception.SetFieldOfViewAngle(config.fieldOfViewAngle);
-                perception.SetVisionCheckInterval(config.visionCheckInterval);
+                perception.SetConfig(config);
+                perception.SetEvent(ai);
             }
             
             if (combat != null)
             {
                 combat.SetFireRate(config.attackInterval);
-                combat.SetReloadTime(2f); // 기본값
+                combat.SetAimPrecision(config.aimPrecision);
             }
         }
         
@@ -337,8 +341,7 @@ public class EnemyController : NetworkBehaviour
         if (Time.time - lastSyncTime < syncInterval) return;
         
         // 현재 상태 데이터 생성
-        EnemyStateData newStateData = ai?.CreateNetworkSyncData() ?? 
-            new EnemyStateData(transform.position, CurrentStateType);
+        EnemyStateData newStateData = ai?.CreateNetworkSyncData() ?? new EnemyStateData(transform.position, CurrentStateType);
         
         // 상태 데이터가 변경되었는지 확인
         if (!syncStateData.Value.Equals(newStateData))

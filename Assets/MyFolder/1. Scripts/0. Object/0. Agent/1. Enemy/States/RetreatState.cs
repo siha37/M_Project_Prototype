@@ -1,3 +1,4 @@
+using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Data;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -80,7 +81,7 @@ public class RetreatState : EnemyAIState
         var config = GetConfig(ai);
         if (config != null)
         {
-            ai.Movement?.SetSpeed(config.normalSpeed);
+            ai.Movement?.SetSpeed(config.defaultSpeed);
         }
         
         // 상태 초기화
@@ -185,11 +186,11 @@ public class RetreatState : EnemyAIState
     /// </summary>
     private bool IsTargetValid(EnemyAI ai)
     {
-        if (ai.CurrentTarget == null) return false;
+        if (!ai.CurrentTarget) return false;
         
         // 타겟이 살아있는지 확인
         var targetNetworkSync = ai.CurrentTarget.GetComponent<PlayerNetworkSync>();
-        if (targetNetworkSync != null && targetNetworkSync.IsDead)
+        if (targetNetworkSync && targetNetworkSync.IsDead())
         {
             Log(ai, "타겟이 사망함");
             return false;
@@ -204,7 +205,7 @@ public class RetreatState : EnemyAIState
     private void CalculateRetreatPosition(EnemyAI ai)
     {
         var config = GetConfig(ai);
-        if (config == null || ai.CurrentTarget == null) return;
+        if (!config || !ai.CurrentTarget) return;
         
         // 타겟에서 멀어지는 방향 계산
         Vector3 retreatDirection = (ai.transform.position - ai.CurrentTarget.position).normalized;
@@ -310,12 +311,12 @@ public class RetreatState : EnemyAIState
     private void HandleRetreatMovement(EnemyAI ai)
     {
         var config = GetConfig(ai);
-        if (config == null) return;
+        if (!config) return;
         
         // 후퇴 목표 지점에 도달했는지 확인
-        if (!hasReachedRetreatPosition && ai.Movement != null)
+        if (!hasReachedRetreatPosition && ai.Movement)
         {
-            if (ai.Movement.HasReachedDestination())
+            if (ai.Movement.HasReachedDestination)
             {
                 hasReachedRetreatPosition = true;
                 Log(ai, "후퇴 지점 도달", EnemyConfig.LogLevel.Verbose);

@@ -1,5 +1,6 @@
 using System.Collections;
 using FishNet;
+using FishNet.Managing;
 using FishNet.Object;
 using MyFolder._1._Scripts._3._SingleTone;
 using UnityEngine;
@@ -64,7 +65,7 @@ namespace MyFolder._1._Scripts._0._Object._1._Spawner
                 if (NetworkEnemyManager.Instance != null)
                 {
                     // NetworkEnemyManager가 서버로 완전히 초기화되었는지 확인
-                    if (NetworkEnemyManager.Instance.IsServer)
+                    if (NetworkEnemyManager.Instance.IsServerInitialized)
                     {
                         Log("NetworkEnemyManager 서버 초기화 완료 - 연결 성공");
                         break;
@@ -90,7 +91,7 @@ namespace MyFolder._1._Scripts._0._Object._1._Spawner
                 yield break;
             }
         
-            if (!NetworkEnemyManager.Instance.IsServer)
+            if (!NetworkEnemyManager.Instance.IsServerInitialized)
             {
                 LogError("NetworkEnemyManager가 서버로 초기화되지 않았습니다! 스포너를 비활성화합니다.");
                 enabled = false;
@@ -99,7 +100,7 @@ namespace MyFolder._1._Scripts._0._Object._1._Spawner
 
             // 안전하게 NetworkEnemyManager에 스포너 등록
             Log("NetworkEnemyManager 연결 완료 - 스포너 등록 시작");
-            Log($"스포너 등록 전 상태 확인 - NetworkEnemyManager IsServer: {NetworkEnemyManager.Instance.IsServer}, IsNetworked: {NetworkEnemyManager.Instance.IsNetworked}");
+            Log($"스포너 등록 전 상태 확인 - NetworkEnemyManager IsServer: {NetworkEnemyManager.Instance.IsServerInitialized}, IsNetworked: {NetworkEnemyManager.Instance.IsNetworked}");
         
             NetworkEnemyManager.Instance.AddSpawner();
         
@@ -143,7 +144,8 @@ namespace MyFolder._1._Scripts._0._Object._1._Spawner
             bool canSpawn = NetworkEnemyManager.Instance.CanSpawnEnemy();
             if (!canSpawn)
             {
-                Log($"전역 적 수량 한계 도달: {NetworkEnemyManager.Instance.CurrentEnemyCount}/{NetworkEnemyManager.Instance.MaxEnemyCount}");
+                Log($"전역 적 수량 한계 도달: {NetworkEnemyManager.Instance.CurrentEnemyCount}" +
+                    $"/{NetworkEnemyManager.Instance.MaxEnemyCount}");
             }
         
             return canSpawn;
@@ -153,6 +155,8 @@ namespace MyFolder._1._Scripts._0._Object._1._Spawner
         {
             if (!IsServerInitialized) return;
 
+            
+            Log("적 오브젝트 생성");
             // ✅ FishNet 올바른 방식: Instantiate 후 NetworkManager를 통해 스폰
             GameObject enemy = Instantiate(enemyPrefab, transform.position, Quaternion.identity);
         
@@ -165,11 +169,26 @@ namespace MyFolder._1._Scripts._0._Object._1._Spawner
                 return;
             }
 
+            NetworkManager networkManager = InstanceFinder.NetworkManager;
             // ✅ InstanceFinder를 통한 올바른 네트워크 스폰
-            if (InstanceFinder.ServerManager)
+            Log($"NetworkManager 체크: {networkManager}, ServerManager 체크: {networkManager?.ServerManager}");
+            Log($"NetworkObject 상태: {networkObject}, IsSpawned: {networkObject.IsSpawned}");
+            
+            if (networkManager && networkManager.ServerManager)
             {
-                InstanceFinder.ServerManager.Spawn(networkObject);
-                Log($"네트워크 스폰 완료: {enemy.name}");
+                try
+                {
+                    networkManager.ServerManager.Spawn(networkObject);
+                    currentSpawnedCount++;
+                    NetworkEnemyManager.Instance.AddEnemy();
+                    Log($"네트워크 스폰 완료: {enemy.name}");
+                }
+                catch (System.Exception e)
+                {
+                    LogError($"스폰 실패: {e.Message}");
+                    Destroy(enemy);
+                    return;
+                }
             }
             else
             {
@@ -177,39 +196,12 @@ namespace MyFolder._1._Scripts._0._Object._1._Spawner
                 Destroy(enemy);
                 return;
             }
-
-            // 타겟 설정 및 초기화
-            NetworkObject targetNetworkObject = NetworkPlayerManager.Instance.GetRandomPlayer();
-            GameObject target = targetNetworkObject?.gameObject;
-            enemy.TryGetComponent(out EnemyController enemyController);
-        
-            if (enemyController && target)
-            {
-                // 서버에서 적 초기화
-                enemyController.Init(target, transform.position);
-            
-                // 적 수량 카운터 업데이트
-                NetworkEnemyManager.Instance.AddEnemy();
-                currentSpawnedCount++;
-            
-                Log($"적 스폰 및 초기화 완료: {currentSpawnedCount}/{maxSpawnCount}, 타겟: {target.name}");
-            }
-            else
-            {
-                LogError($"EnemyControll({enemyController != null}) 또는 Player 타겟({target != null})을 찾을 수 없습니다.");
-            
-                // 실패 시 네트워크 객체 제거
-                if (networkObject.IsSpawned)
-                {
-                    InstanceFinder.ServerManager.Despawn(networkObject);
-                }
-            }
         }
 
-        // ✅ 적이 죽었을 때 호출될 메서드 (EnemyControll에서 호출)
+        // ✅ 적이 죽었을 때 호출될 메서드 (EnemyController에서 호출)
         public void OnEnemyDestroyed()
         {
-            if (IsServer)
+            if (IsServerInitialized)
             {
                 currentSpawnedCount = Mathf.Max(0, currentSpawnedCount - 1);
                 NetworkEnemyManager.Instance.RemoveEnemy();
@@ -243,7 +235,7 @@ namespace MyFolder._1._Scripts._0._Object._1._Spawner
         [ContextMenu("Force Spawn Enemy")]
         public void ForceSpawnEnemy()
         {
-            if (IsServer && Application.isPlaying)
+            if (IsServerInitialized && Application.isPlaying)
             {
                 if (CanSpawnMoreEnemies())
                 {
@@ -263,7 +255,7 @@ namespace MyFolder._1._Scripts._0._Object._1._Spawner
         [ContextMenu("Reset Spawn Count")]
         public void ResetSpawnCount()
         {
-            if (IsServer)
+            if (IsServerInitialized)
             {
                 currentSpawnedCount = 0;
                 Log("스폰 카운트 리셋 완료");
@@ -290,7 +282,7 @@ namespace MyFolder._1._Scripts._0._Object._1._Spawner
             try
             {
                 // NetworkBehaviour가 초기화된 상태에서만 IsServer 체크
-                return Application.isPlaying && IsNetworked && IsServer;
+                return Application.isPlaying && GetIsNetworked() && IsServerInitialized;
             }
             catch
             {
@@ -304,7 +296,7 @@ namespace MyFolder._1._Scripts._0._Object._1._Spawner
             try
             {
                 // NetworkBehaviour가 초기화된 상태에서만 클라이언트 체크
-                return Application.isPlaying && IsNetworked && !IsServer;
+                return Application.isPlaying && GetIsNetworked() && !IsServerInitialized;
             }
             catch
             {
@@ -313,6 +305,7 @@ namespace MyFolder._1._Scripts._0._Object._1._Spawner
             }
         }
 
+#if UNITY_EDITOR
         // ✅ 기즈모로 시각화 (안전한 네트워크 상태 체크)
         private void OnDrawGizmos()
         {
@@ -366,14 +359,11 @@ namespace MyFolder._1._Scripts._0._Object._1._Spawner
             // 정보 텍스트 (에디터에서만)
             if (!Application.isPlaying)
             {
-#if UNITY_EDITOR
                 UnityEditor.Handles.Label(transform.position + Vector3.up * 2f, 
                     $"Max: {maxSpawnCount}\nInterval: {spawnInterval}s\nDelay: {spawnDelay}s");
-#endif
             }
             else
             {
-#if UNITY_EDITOR
                 string statusText = "초기화 중...";
             
                 try
@@ -397,8 +387,8 @@ namespace MyFolder._1._Scripts._0._Object._1._Spawner
                 }
             
                 UnityEditor.Handles.Label(transform.position + Vector3.up * 2f, statusText);
-#endif
             }
         }
+#endif
     }
 } 

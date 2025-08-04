@@ -1,6 +1,7 @@
 using UnityEngine;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
+using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Data;
 
 /// <summary>
 /// 적 AI 메인 컴포넌트
@@ -8,19 +9,19 @@ using FishNet.Object.Synchronizing;
 /// </summary>
 public class EnemyAI : NetworkBehaviour
 {
-    [Header("=== AI 설정 ===")]
-    [SerializeField] private EnemyConfig config;
+    private EnemyConfig config;
     
-    [Header("=== 컴포넌트 참조 ===")]
-    [SerializeField] private EnemyMovement movement;
-    [SerializeField] private EnemyCombat combat;
-    [SerializeField] private EnemyPerception perception;
-    
+    private EnemyMovement movement;
+    private EnemyCombat combat;
+    private EnemyPerception perception;
     [Header("=== 디버그 ===")]
     [SerializeField] private bool showDebugInfo = true;
-    
+
+    [SerializeField] private string currentState;
+    [SerializeField] private string previousState;
     // 상태 머신
     private EnemyAIStateMachine stateMachine;
+    
     
     // 타겟 관리
     private Transform currentTarget;
@@ -82,11 +83,12 @@ public class EnemyAI : NetworkBehaviour
     
     private void Awake()
     {
+        TryGetComponent(out EnemyController controller);
         // 컴포넌트 자동 할당
-        if (movement == null) movement = GetComponent<EnemyMovement>();
-        if (combat == null) combat = GetComponent<EnemyCombat>();
-        if (perception == null) perception = GetComponent<EnemyPerception>();
-        if (networkSync == null) networkSync = GetComponent<EnemyNetworkSync>();
+        if (movement == null) movement       = controller.Movement;
+        if (combat == null) combat           = controller.Combat;
+        if (perception == null) perception   = controller.Perception;
+        if (networkSync == null) networkSync = controller.NetworkSync;
         
         // 이벤트 시스템 초기화
         events = new EnemyEvents();
@@ -102,8 +104,8 @@ public class EnemyAI : NetworkBehaviour
         // 서버에서만 AI 로직 실행
         if (config == null)
         {
-            LogManager.LogError(LogCategory.Enemy, "EnemyConfig가 설정되지 않았습니다!", this);
-            return;
+            TryGetComponent(out EnemyController controller);
+            config = controller.Config;
         }
         
         // 상태 머신 초기화
@@ -129,7 +131,7 @@ public class EnemyAI : NetworkBehaviour
     private void Update()
     {
         // 서버에서만 AI 업데이트
-        if (!IsServer) return;
+        if (!IsServerInitialized) return;
         
         // 성능 최적화: 업데이트 간격 조절
         if (Time.time - lastAIUpdateTime < aiUpdateInterval) return;
@@ -142,7 +144,7 @@ public class EnemyAI : NetworkBehaviour
     private void FixedUpdate()
     {
         // 서버에서만 물리 업데이트
-        if (!IsServer) return;
+        if (!IsServerInitialized) return;
         
         stateMachine?.FixedUpdate();
     }
@@ -166,7 +168,7 @@ public class EnemyAI : NetworkBehaviour
         Transform oldTarget = currentTarget;
         currentTarget = target;
         
-        if (target != null)
+        if (target)
         {
             lastKnownTargetPosition = target.position;
             
@@ -189,6 +191,8 @@ public class EnemyAI : NetworkBehaviour
     /// </summary>
     public void ChangeState(EnemyAIStateType newState)
     {
+        string prevState = currentState;
+        string newStateName = newState.ToString();
         if (stateMachine != null)
         {
             bool success = stateMachine.ChangeState(newState);
@@ -196,6 +200,8 @@ public class EnemyAI : NetworkBehaviour
             if (success)
             {
                 LogManager.Log(LogCategory.Enemy, $"상태 변경: {newState.ToDisplayString()}", this);
+                currentState = newStateName;
+                previousState = prevState;
             }
             else
             {
@@ -263,7 +269,7 @@ public class EnemyAI : NetworkBehaviour
         stateMachine.Update();
         
         // 네트워크 동기화 (필요한 경우)
-        if (networkSync != null)
+        if (networkSync)
         {
             networkSync.UpdateFromAI(this);
         }
@@ -317,6 +323,7 @@ public class EnemyAI : NetworkBehaviour
     }
     
     // ========== Validation ==========
+#if UNITY_EDITOR
     
     private void OnValidate()
     {
@@ -326,4 +333,5 @@ public class EnemyAI : NetworkBehaviour
         if (perception == null) perception = GetComponent<EnemyPerception>();
         if (networkSync == null) networkSync = GetComponent<EnemyNetworkSync>();
     }
+#endif
 } 

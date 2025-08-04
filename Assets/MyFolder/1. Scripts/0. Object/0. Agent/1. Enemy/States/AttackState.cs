@@ -1,3 +1,4 @@
+using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Data;
 using UnityEngine;
 
 /// <summary>
@@ -85,7 +86,7 @@ public class AttackState : EnemyAIState
         var config = GetConfig(ai);
         if (config != null)
         {
-            ai.Movement?.SetSpeed(config.normalSpeed);
+            ai.Movement?.SetSpeed(config.defaultSpeed);
         }
         
         // 이벤트 발생
@@ -204,8 +205,8 @@ public class AttackState : EnemyAIState
         if (ai.CurrentTarget == null) return false;
         
         // 타겟이 살아있는지 확인
-        var targetNetworkSync = ai.CurrentTarget.GetComponent<PlayerNetworkSync>();
-        if (targetNetworkSync != null && targetNetworkSync.IsDead)
+        PlayerNetworkSync targetNetworkSync = ai.CurrentTarget.GetComponent<PlayerNetworkSync>();
+        if (targetNetworkSync && targetNetworkSync.IsDead())
         {
             Log(ai, "타겟이 사망함");
             return false;
@@ -223,7 +224,7 @@ public class AttackState : EnemyAIState
         if (config == null || ai.CurrentTarget == null) return;
         
         // 시야 확인
-        bool currentLineOfSight = ai.Perception != null && ai.Perception.LineOfSight(ai.CurrentTarget);
+        bool currentLineOfSight = ai.Perception && ai.Perception.LineOfSight(ai.CurrentTarget);
         
         if (currentLineOfSight)
         {
@@ -266,7 +267,7 @@ public class AttackState : EnemyAIState
     private void HandleAimingAndShooting(EnemyAI ai)
     {
         var config = GetConfig(ai);
-        if (config == null || ai.CurrentTarget == null || ai.Combat == null) return;
+        if (!config || !ai.CurrentTarget || !ai.Combat) return;
         
         // 타겟을 향해 조준
         ai.Combat.AimAt(ai.CurrentTarget.position);

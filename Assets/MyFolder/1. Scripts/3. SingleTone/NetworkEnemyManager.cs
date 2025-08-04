@@ -158,7 +158,7 @@ public class NetworkEnemyManager : NetworkBehaviour
     public void AddEnemy()
     {
         // 서버에서만 직접 값 변경
-        if (IsServer && IsServerInitialized)
+        if (IsServerInitialized && IsServerInitialized)
         {
             syncCurrentEnemyCount.Value++;
             LogManager.Log(LogCategory.Enemy, $"NetworkEnemyManager 적 생성됨. 현재 적 수량: {syncCurrentEnemyCount.Value}/{syncMaxEnemyCount.Value}", this);
@@ -172,7 +172,7 @@ public class NetworkEnemyManager : NetworkBehaviour
     public void RemoveEnemy()
     {
         // 서버에서만 직접 값 변경
-        if (IsServer && IsServerInitialized)
+        if (IsServerInitialized && IsServerInitialized)
         {
             syncCurrentEnemyCount.Value = Mathf.Max(0, syncCurrentEnemyCount.Value - 1);
             LogManager.Log(LogCategory.Enemy, $"NetworkEnemyManager 적 제거됨. 현재 적 수량: {syncCurrentEnemyCount.Value}/{syncMaxEnemyCount.Value}", this);

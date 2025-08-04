@@ -196,7 +196,7 @@ public class AgentNetworkSync : NetworkBehaviour
         LogManager.Log(LogCategory.Player, $"{gameObject.name} 서버에서 발사 처리: {angle} : {shotPosition}", this);
         
         // ✅ BulletManager 초기화 확인 및 대기
-        if (BulletManager.Instance == null)
+        if (!BulletManager.Instance)
         {
             LogManager.LogWarning(LogCategory.Projectile, $"{gameObject.name} BulletManager 초기화 대기 중...", this);
             StartCoroutine(WaitForBulletManagerAndShoot(angle, shotPosition));
@@ -240,7 +240,7 @@ public class AgentNetworkSync : NetworkBehaviour
         }
         else
         {
-                            LogManager.LogError(LogCategory.Projectile, $"{gameObject.name} BulletManager 초기화 타임아웃! 발사 취소", this);
+            LogManager.LogError(LogCategory.Projectile, $"{gameObject.name} BulletManager 초기화 타임아웃! 발사 취소", this);
         }
     }
     

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 /// <summary>
 /// 적 AI 설정 ScriptableObject
@@ -10,7 +11,7 @@ public class EnemyConfig : ScriptableObject
 {
     [Header("=== 탐지 설정 ===")]
     [Tooltip("적이 플레이어를 탐지할 수 있는 최대 거리")]
-    [Range(5f, 20f)]
+    [Range(5f, 60f)]
     public float detectionRange = 10f;
     
     [Tooltip("공격을 시작할 수 있는 거리")]
@@ -18,7 +19,7 @@ public class EnemyConfig : ScriptableObject
     public float attackRange = 5f;
     
     [Tooltip("추적을 포기하는 거리 (탐지 범위보다 커야 함)")]
-    [Range(10f, 25f)]
+    [Range(10f, 80f)]
     public float loseTargetRange = 15f;
     
     [Tooltip("시야각 (도)")]
@@ -26,25 +27,44 @@ public class EnemyConfig : ScriptableObject
     public float fieldOfViewAngle = 90f;
     
     [Header("=== 이동 설정 ===")]
+    
     [Tooltip("일반 이동 속도")]
     [Range(1f, 8f)]
-    public float normalSpeed = 3f;
+    public float defaultSpeed = 3f;
     
-    [Tooltip("추적 시 이동 속도")]
-    [Range(2f, 10f)]
+    [Tooltip("추적 이동 속도")]
+    [Range(1f, 8f)]
     public float chaseSpeed = 5f;
+    
+    [Tooltip("이동 최소 거리")]
+    [Range(0f, 20f)]
+    public float stoppingDistance = 5f;
+    
+    [Tooltip("회전 속도")]
+    [Range(1,20)]
+    public float rotationSpeed = 5f;
+    
+    
+    
+    
+    [Header("=== 회피 기동 설정 ===")]
+    [Tooltip("회피 기동 거리")]
+    [Range(1f, 6f)]
+    public float strafeDistance = 3f;
+    
+    [Tooltip("회피 방향 변경 간격")]
+    [Range(1f, 5f)]
+    public float strafeChangeInterval = 2f;
+    
+    [Tooltip("회피 기동 속도 배율")]
+    [Range(0.5f, 2f)]
+    public float strafeSpeedMultiplier = 1.2f;
     
     [Tooltip("경로 업데이트 간격 (초)")]
     [Range(0.1f, 2f)]
     public float pathUpdateInterval = 0.5f;
     
-    [Tooltip("순찰 반경")]
-    [Range(3f, 15f)]
-    public float patrolRadius = 8f;
     
-    [Tooltip("순찰 지점 대기 시간")]
-    [Range(1f, 10f)]
-    public float patrolWaitTime = 3f;
     
     [Header("=== 전투 설정 ===")]
     [Tooltip("타겟과의 최소 유지 거리")]
@@ -63,35 +83,6 @@ public class EnemyConfig : ScriptableObject
     [Range(0.1f, 3f)]
     public float attackInterval = 0.5f;
     
-    [Header("=== 회피 기동 설정 ===")]
-    [Tooltip("회피 기동 거리")]
-    [Range(1f, 6f)]
-    public float strafeDistance = 3f;
-    
-    [Tooltip("회피 방향 변경 간격")]
-    [Range(1f, 5f)]
-    public float strafeChangeInterval = 2f;
-    
-    [Tooltip("회피 기동 속도 배율")]
-    [Range(0.5f, 2f)]
-    public float strafeSpeedMultiplier = 1.2f;
-    
-    [Header("=== 위치 탐색 설정 ===")]
-    [Tooltip("사격 가능 위치 탐색 반경")]
-    [Range(2f, 10f)]
-    public float searchRadius = 5f;
-    
-    [Tooltip("사격 가능 위치 탐색 각도")]
-    [Range(15f, 90f)]
-    public float searchAngle = 45f;
-    
-    [Tooltip("위치 탐색 최대 시도 횟수")]
-    [Range(5, 20)]
-    public int maxSearchAttempts = 10;
-    
-    [Tooltip("위치 탐색 간격 (초)")]
-    [Range(0.1f, 1f)]
-    public float searchInterval = 0.5f;
     
     [Header("=== 인지 설정 ===")]
     [Tooltip("시야 차단 장애물 레이어")]
@@ -104,10 +95,23 @@ public class EnemyConfig : ScriptableObject
     [Range(0.05f, 0.5f)]
     public float visionCheckInterval = 0.1f;
     
+    [Tooltip("시야 확인용 레이 개수")]
+    [Range(1, 21)] 
+    public int visionRayCount = 8;
+    
+    
+    
+    
+    
     [Header("=== AI 행동 설정 ===")]
-    [Tooltip("순찰 상태에서 대기 시간")]
-    [Range(1f, 10f)]
-    public float patrolIdleTime = 2f;
+    
+    [Tooltip("순찰 반경")]
+    [Range(3f, 30f)]
+    public float patrolRadius = 8f;
+    
+    [Tooltip("순찰 지점 대기 시간")]
+    [Range(1f, 20f)]
+    public float patrolWaitTime = 3f;
     
     [Tooltip("추적 포기 후 경계 시간")]
     [Range(3f, 15f)]
@@ -116,6 +120,9 @@ public class EnemyConfig : ScriptableObject
     [Tooltip("공격 실패 시 재시도 간격")]
     [Range(0.5f, 3f)]
     public float attackRetryInterval = 1f;
+    
+    
+    
     
     [Header("=== 디버그 설정 ===")]
     [Tooltip("디버그 정보 표시")]
@@ -191,7 +198,7 @@ public class EnemyConfig : ScriptableObject
     /// <returns></returns>
     public override string ToString()
     {
-        return $"EnemyConfig[{name}] - Detection:{detectionRange} Attack:{attackRange} Speed:{normalSpeed}/{chaseSpeed}";
+        return $"EnemyConfig[{name}] - Detection:{detectionRange} Attack:{attackRange} Speed:{defaultSpeed}";
     }
     
     /// <summary>
@@ -204,8 +211,7 @@ public class EnemyConfig : ScriptableObject
         attackRange = 5f;
         loseTargetRange = 15f;
         fieldOfViewAngle = 90f;
-        normalSpeed = 3f;
-        chaseSpeed = 5f;
+        defaultSpeed = 3f;
         pathUpdateInterval = 0.5f;
         patrolRadius = 8f;
         minDistanceToTarget = 2f;
@@ -213,8 +219,6 @@ public class EnemyConfig : ScriptableObject
         aimPrecision = 0.1f;
         strafeDistance = 3f;
         strafeChangeInterval = 2f;
-        searchRadius = 5f;
-        searchAngle = 45f;
         
         LogManager.Log(LogCategory.Enemy, $"{name} 설정을 기본값으로 리셋했습니다.", this);
     }
