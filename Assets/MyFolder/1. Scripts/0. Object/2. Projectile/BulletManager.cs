@@ -32,7 +32,7 @@ public class BulletManager : NetworkBehaviour
     
     public override void OnStartServer()
     {
-        if (Instance == null)
+        if (!Instance)
         {
             Instance = this;
             InitializeServerPool();
@@ -40,7 +40,7 @@ public class BulletManager : NetworkBehaviour
         }
         else
         {
-                            LogManager.LogWarning(LogCategory.Projectile, "BulletManager 서버 인스턴스가 이미 존재합니다.", this);
+            LogManager.LogWarning(LogCategory.Projectile, "BulletManager 서버 인스턴스가 이미 존재합니다.", this);
         }
     }
     
@@ -115,14 +115,14 @@ public class BulletManager : NetworkBehaviour
         
         // 시각 전용 설정
         Rigidbody2D rb = bullet.GetComponent<Rigidbody2D>();
-        if (rb != null) rb.isKinematic = true;
+        if (rb) rb.bodyType = RigidbodyType2D.Kinematic;
         
         // 네트워크 컴포넌트 제거 (시각 전용이므로)
         NetworkObject netObj = bullet.GetComponent<NetworkObject>();
-        if (netObj != null) DestroyImmediate(netObj);
+        if (netObj) DestroyImmediate(netObj);
         
         Projectile proj = bullet.GetComponent<Projectile>();
-        if (proj != null) DestroyImmediate(proj);
+        if (proj) DestroyImmediate(proj);
         
         visualBulletPool.Enqueue(bullet);
     }
@@ -158,7 +158,7 @@ public class BulletManager : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void FireBulletWithConnection(Vector3 startPos, float angle, float speed, float damage, float lifetime, NetworkConnection shooter)
     {
-        if (!IsServer) return;
+        if (!IsServerInitialized) return;
         
         if (bulletPool.Count > 0)
         {
@@ -190,7 +190,33 @@ public class BulletManager : NetworkBehaviour
             }
         }
     }
-    
+    // ✅ 적군 AI 전용 발사 메서드 추가
+    [ServerRpc(RequireOwnership = false)]
+    public void FireBulletForEnemy(Vector3 startPos, float angle, float speed, float damage, float lifetime, GameObject enemyObject)
+    {
+        if (!IsServerInitialized) return;
+        
+        if (bulletPool.Count > 0)
+        {
+            ServerBullet bullet = bulletPool.Dequeue();
+            bullet.InitializeForEnemy(startPos, angle, speed, damage, lifetime, enemyObject);
+            activeBullets.Add(bullet);
+            
+            CreateVisualBulletRpc(startPos, angle, speed, lifetime, bullet.bulletId);
+        }
+        else
+        {
+            // 풀 확장 시도
+            if (ExpandServerPool() && bulletPool.Count > 0)
+            {
+                ServerBullet bullet = bulletPool.Dequeue();
+                bullet.InitializeForEnemy(startPos, angle, speed, damage, lifetime, enemyObject);
+                activeBullets.Add(bullet);
+                
+                CreateVisualBulletRpc(startPos, angle, speed, lifetime, bullet.bulletId);
+            }
+        }
+    }
     // ✅ bulletId 파라미터 추가
     [ObserversRpc]
     private void CreateVisualBulletRpc(Vector3 startPos, float angle, float speed, float lifetime, uint bulletId)
@@ -304,7 +330,7 @@ public class BulletManager : NetworkBehaviour
     // 서버에서 총알 충돌 처리
     public void OnBulletHit(ServerBullet bullet, GameObject target)
     {
-        if (!IsServer) return;
+        if (!IsServerInitialized) return;
         
         // ✅ 공격자 NetworkConnection 복원
         NetworkConnection attacker = null;
@@ -314,15 +340,23 @@ public class BulletManager : NetworkBehaviour
             InstanceFinder.ServerManager.Clients.TryGetValue((int)bullet.ownerNetworkId, out attacker);
         }
         
+        // ✅ 충돌 로깅 개선
+        string ownerTypeText = bullet.ownerType.ToString();
+        string targetTag = target.tag;
+        LogManager.Log(LogCategory.Projectile, 
+            $"총알 충돌: {ownerTypeText} 총알(ID:{bullet.bulletId}) -> {targetTag}({target.name})", this);
+        
         // 데미지 처리
         if (bullet.damage > 0)
         {
             AgentNetworkSync agentSync = target.GetComponent<AgentNetworkSync>();
-            if (agentSync != null)
+            if (agentSync)
             {
                 Vector2 hitDirection = bullet.GetDirection();
                 // ✅ 공격자 정보와 함께 데미지 처리
                 agentSync.RequestTakeDamage(bullet.damage, hitDirection, attacker);
+                LogManager.Log(LogCategory.Projectile, 
+                    $"데미지 적용: {bullet.damage} (공격자:{attacker?.ClientId}, 타겟:{target.name})", this);
             }
         }
         
@@ -537,8 +571,20 @@ public class ServerBullet
     public float lifetime;
     public float elapsed;
     public uint ownerNetworkId;
+    public GameObject ownerGameObject;
+    
+    // ✅ 발사자 타입 구분 추가
+    public BulletOwnerType ownerType;
     
     private static uint nextBulletId = 1; // ✅ 고유 ID 생성기
+    
+    // ✅ 발사자 타입 열거형
+    public enum BulletOwnerType
+    {
+        Player,     // 플레이어가 발사한 총알
+        Enemy,      // 적군이 발사한 총알
+        Neutral     // 중립 (환경 등)
+    }
     
     public void Initialize(Vector3 startPos, float angle, float speed, float damage, float lifetime, uint ownerNetworkId)
     {
@@ -550,6 +596,7 @@ public class ServerBullet
         this.lifetime = lifetime;
         this.elapsed = 0f;
         this.ownerNetworkId = ownerNetworkId;
+        this.ownerType = BulletOwnerType.Player; // 기본값
     }
 
     // ✅ FishNet 공식 권장: NetworkConnection에서 안전하게 Owner ID 추출
@@ -565,11 +612,77 @@ public class ServerBullet
         
         // ✅ FishNet 공식 권장: 안전한 Owner ID 추출
         this.ownerNetworkId = (uint)(shooter?.ClientId ?? 0);  // OwnerId 대신 ClientId 사용
+        
+        // ✅ 발사자 타입 자동 감지
+        this.ownerType = DetermineOwnerType(shooter);
+    }
+    
+// ServerBullet 클래스에 적군 초기화 메서드 추가
+    public void InitializeForEnemy(Vector3 startPos, float angle, float speed, float damage, float lifetime, GameObject enemyObject)
+    {
+        this.bulletId = nextBulletId++;
+        this.position = startPos;
+        this.direction = new Vector3(Mathf.Cos(angle * Mathf.Deg2Rad), Mathf.Sin(angle * Mathf.Deg2Rad), 0);
+        this.speed = speed;
+        this.damage = damage;
+        this.lifetime = lifetime;
+        this.elapsed = 0f;
+        
+        // ✅ 적군은 NetworkConnection 대신 GameObject 참조 저장
+        this.ownerNetworkId = 0; // 적군은 NetworkConnection이 없으므로 0
+        this.ownerType = BulletOwnerType.Enemy;
+        
+        // ✅ GameObject 참조를 위한 추가 필드 필요
+        this.ownerGameObject = enemyObject;
+    }
+
+    
+    // ✅ 발사자 타입 감지 메서드
+    private BulletOwnerType DetermineOwnerType(NetworkConnection shooter)
+    {
+        if (shooter == null) return BulletOwnerType.Neutral;
+        
+        // ✅ 적군 AI는 NetworkConnection이 null이거나 FirstObject가 비어있을 수 있음
+        // 이 경우 GameObject를 직접 확인해야 함
+        GameObject shooterObj = null;
+        
+        if (shooter.FirstObject != null)
+        {
+            shooterObj = shooter.FirstObject.gameObject;
+        }
+        else
+        {
+            // ✅ FirstObject가 비어있는 경우, 다른 방법으로 발사자 확인
+            // 예: 발사 위치나 다른 식별자로 판단
+            LogManager.Log(LogCategory.Projectile, 
+                $"발사자 NetworkConnection의 FirstObject가 비어있음. ClientId: {shooter.ClientId}");
+            
+            // ✅ 적군 AI는 보통 특정 태그나 컴포넌트로 식별 가능
+            // 이 부분은 실제 게임 구조에 따라 조정 필요
+            return BulletOwnerType.Enemy; // 기본적으로 적군으로 가정
+        }
+        
+        if (shooterObj)
+        {
+            // 적군 컴포넌트 확인
+            if (shooterObj.CompareTag("Enemy") || shooterObj.TryGetComponent(out EnemyController controller))
+            {
+                return BulletOwnerType.Enemy;
+            }
+            
+            // 플레이어 컴포넌트 확인
+            if (shooterObj.CompareTag("Player"))
+            {
+                return BulletOwnerType.Player;
+            }
+        }
+        
+        return BulletOwnerType.Neutral;
     }
     
     public void Update(float deltaTime)
     {
-        position += direction * speed * deltaTime;
+        position += direction * (speed * deltaTime);
         elapsed += deltaTime;
         
         // ✅ 개선된 충돌 검사 구현
@@ -579,10 +692,10 @@ public class ServerBullet
     private void CheckCollisions()
     {
         // ✅ 레이어 필터링과 Owner 체크 추가
-        LayerMask targetLayers = LayerMask.GetMask("Agent", "Wall");
+        LayerMask targetLayers = LayerMask.GetMask("Player","Enemy", "Wall");
         Collider2D hit = Physics2D.OverlapCircle(position, 0.1f, targetLayers);
         
-        if (hit != null)
+        if (hit)
         {
             // ✅ Owner와의 충돌 무시
             GameObject ownerObject = GetOwnerGameObject();
@@ -597,11 +710,61 @@ public class ServerBullet
                 return;
             }
             
-            if (hit.CompareTag("Player") || hit.CompareTag("Enemy"))
+            // ✅ 팀/진영 체크 추가
+            if (ShouldHitTarget(hit.gameObject))
             {
                 BulletManager.Instance.OnBulletHit(this, hit.gameObject);
             }
         }
+    }
+    
+    // ✅ 팀/진영 충돌 체크 로직
+    private bool ShouldHitTarget(GameObject target)
+    {
+        // 플레이어가 발사한 총알
+        if (ownerType == BulletOwnerType.Player)
+        {
+            // 플레이어 총알은 적군과 플레이어 모두에게 데미지 (팀킬 가능)
+            bool shouldHit = target.CompareTag("Player") || target.CompareTag("Enemy");
+            if (shouldHit)
+            {
+                LogManager.Log(LogCategory.Projectile, 
+                    $"플레이어 총알 -> {target.tag} 허용 (팀킬 가능)");
+            }
+            return shouldHit;
+        }
+        // 적군이 발사한 총알
+        else if (ownerType == BulletOwnerType.Enemy)
+        {
+            // 적군 총알은 오직 플레이어에게만 데미지
+            bool shouldHit = target.CompareTag("Player");
+            if (shouldHit)
+            {
+                LogManager.Log(LogCategory.Projectile, 
+                    $"적군 총알 -> {target.tag} 허용 (플레이어만)");
+            }
+            else if (target.CompareTag("Enemy"))
+            {
+                LogManager.Log(LogCategory.Projectile, 
+                    $"적군 총알 -> {target.tag} 차단 (적군끼리 맞지 않음)");
+            }
+            return shouldHit;
+        }
+        
+        // 중립 총알 (환경 등)
+        else if (ownerType == BulletOwnerType.Neutral)
+        {
+            // 중립 총알은 모든 대상에게 데미지
+            bool shouldHit = target.CompareTag("Player") || target.CompareTag("Enemy");
+            if (shouldHit)
+            {
+                LogManager.Log(LogCategory.Projectile, 
+                    $"중립 총알 -> {target.tag} 허용 (모든 대상)");
+            }
+            return shouldHit;
+        }
+        
+        return false;
     }
     
     private GameObject GetOwnerGameObject()
@@ -637,5 +800,6 @@ public class ServerBullet
         lifetime = 0f;
         elapsed = 0f;
         ownerNetworkId = 0;
+        ownerType = BulletOwnerType.Neutral; // ✅ 타입 초기화 추가
     }
 } 

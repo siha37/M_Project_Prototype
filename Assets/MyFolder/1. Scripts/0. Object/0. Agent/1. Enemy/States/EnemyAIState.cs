@@ -1,3 +1,4 @@
+using FishNet.Object;
 using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Data;
 using UnityEngine;
 
@@ -111,7 +112,28 @@ public abstract class EnemyAIState
     /// <returns>동기화할 상태 데이터</returns>
     public virtual EnemyStateData CreateSyncData(EnemyAI ai)
     {
-        return new EnemyStateData(ai.transform.position, StateType);
+        if (ai == null) return EnemyStateData.Default;
+        
+        EnemyStateData data = new EnemyStateData((Vector2)ai.transform.position, StateType);
+        
+        // 전투 상태 설정
+        if (ai.Combat != null)
+        {
+            data.lookAngle = ai.Combat.LookAngle;
+        }
+        
+        // 타겟 정보 설정
+        if (ai.CurrentTarget != null)
+        {
+            ai.CurrentTarget.TryGetComponent(out NetworkBehaviour playerObj);
+            if (playerObj != null)
+            {
+                data.targetClientId = playerObj.Owner?.ClientId ?? -1;
+                data.hasValidTarget = data.targetClientId >= 0;
+            }
+        }
+        
+        return data;
     }
     
     /// <summary>
@@ -135,7 +157,7 @@ public abstract class EnemyAIState
     }
     
     /// <summary>
-    /// ToString 오버라이드 (디버깅용)
+    ///ToString 오버라이드 (디버깅용)
     /// </summary>
     /// <returns>상태 정보 문자열</returns>
     public override string ToString()
@@ -155,7 +177,7 @@ public abstract class EnemyAIState
     /// <param name="logLevel">로그 레벨</param>
     protected void Log(EnemyAI ai, string message, EnemyConfig.LogLevel logLevel = EnemyConfig.LogLevel.Info)
     {
-        if (ai?.Config != null && (int)logLevel <= (int)ai.Config.logLevel)
+        if (ai?.Config && (int)logLevel <= (int)ai.Config.logLevel)
         {
             string fullMessage = $"[{StateName}] {message}";
             

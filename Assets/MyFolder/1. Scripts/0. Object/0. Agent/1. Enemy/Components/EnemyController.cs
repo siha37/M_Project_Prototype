@@ -24,13 +24,8 @@ public class EnemyController : NetworkBehaviour
     [SerializeField] private bool showDebugInfo = true;
     [SerializeField] private bool logStateChanges = true;
     
-    // 네트워크 동기화
-    private readonly SyncVar<EnemyStateData> syncStateData = new SyncVar<EnemyStateData>();
-    
     // 상태 관리
     private bool isInitialized = false;
-    private float lastSyncTime;
-    private float syncInterval = 0.1f; // 10 FPS 동기화
     
     // 이벤트
     public System.Action<EnemyController> OnEnemySpawned;
@@ -72,7 +67,7 @@ public class EnemyController : NetworkBehaviour
     /// <summary>
     /// 현재 상태 데이터
     /// </summary>
-    public EnemyStateData CurrentStateData => syncStateData.Value;
+    public EnemyStateData CurrentStateData => networkSync?.CurrentStateData ?? EnemyStateData.Default;
     
     /// <summary>
     /// 현재 AI 상태
@@ -94,8 +89,7 @@ public class EnemyController : NetworkBehaviour
             AssignComponents();
         }
         
-        // 초기 상태 데이터 설정
-        syncStateData.Value = EnemyStateData.Default;
+        // 컴포넌트 초기화 준비
         
         LogManager.Log(LogCategory.Enemy, "EnemyController 컴포넌트 초기화 완료", this);
     }
@@ -143,14 +137,6 @@ public class EnemyController : NetworkBehaviour
         OnEnemyDespawned?.Invoke(this);
     }
     
-    private void Update()
-    {
-        // 서버에서만 업데이트
-        if (!IsServerInitialized || !isInitialized) return;
-        
-        // 네트워크 동기화 업데이트
-        UpdateNetworkSync();
-    }
     
     private void OnDestroy()
     {
@@ -287,39 +273,100 @@ public class EnemyController : NetworkBehaviour
     }
     
     /// <summary>
-    /// 컴포넌트들 초기화
+    /// 컴포넌트들 초기화 (의존성 순서에 따라)
     /// </summary>
     private void InitializeComponents()
     {
-        // AI 컴포넌트 설정 적용
-        if (ai != null && config != null)
+        if (config == null)
         {
-            // AI 설정을 각 컴포넌트에 적용
-            if (movement != null)
-            {
-                movement.SetSpeed(config.defaultSpeed);
-                movement.SetStoppingDistance(config.stoppingDistance);
-                movement.SetRotationSpeed(config.rotationSpeed);
-                movement.SetStrafeDistance(config.strafeDistance);
-                movement.SetStrafeSpeedMultiplier(config.strafeSpeedMultiplier);
-                movement.SetStrafeChangeInterval(config.strafeChangeInterval);
-                movement.SetAgent();
-            }
-            
-            if (perception != null)
-            {
-                perception.SetConfig(config);
-                perception.SetEvent(ai);
-            }
-            
-            if (combat != null)
-            {
-                combat.SetFireRate(config.attackInterval);
-                combat.SetAimPrecision(config.aimPrecision);
-            }
+            LogManager.LogError(LogCategory.Enemy, "EnemyConfig가 설정되지 않았습니다!", this);
+            return;
         }
+
+        LogManager.Log(LogCategory.Enemy, "컴포넌트 초기화 시작", this);
+
+        // 1단계: 기본 컴포넌트들 설정 적용 (다른 컴포넌트에 의존하지 않는 것들)
+        InitializeMovementComponent();
+        InitializeCombatComponent();
+        InitializePerceptionComponent();
+        
+        // 2단계: AI 컴포넌트 초기화 (다른 컴포넌트들을 참조함)
+        InitializeAIComponent();
+        
+        // 3단계: 네트워크 동기화 컴포넌트 초기화 (모든 컴포넌트 참조)
+        InitializeNetworkSyncComponent();
         
         LogManager.Log(LogCategory.Enemy, "컴포넌트 초기화 완료", this);
+    }
+
+    /// <summary>
+    /// 이동 컴포넌트 초기화
+    /// </summary>
+    private void InitializeMovementComponent()
+    {
+        if (movement == null) return;
+
+        movement.SetSpeed(config.defaultSpeed);
+        movement.SetStoppingDistance(config.stoppingDistance);
+        movement.SetRotationSpeed(config.rotationSpeed);
+        movement.SetStrafeDistance(config.strafeDistance);
+        movement.SetStrafeSpeedMultiplier(config.strafeSpeedMultiplier);
+        movement.SetStrafeChangeInterval(config.strafeChangeInterval);
+        movement.SetAgent();
+
+        LogManager.Log(LogCategory.Enemy, "이동 컴포넌트 초기화 완료", this);
+    }
+
+    /// <summary>
+    /// 전투 컴포넌트 초기화
+    /// </summary>
+    private void InitializeCombatComponent()
+    {
+        if (combat == null) return;
+
+        combat.SetFireRate(config.attackInterval);
+        combat.SetAimPrecision(config.aimPrecision);
+        combat.SetReloadTime(config.reloadTime);
+
+        LogManager.Log(LogCategory.Enemy, "전투 컴포넌트 초기화 완료", this);
+    }
+
+    /// <summary>
+    /// 인지 컴포넌트 초기화
+    /// </summary>
+    private void InitializePerceptionComponent()
+    {
+        if (perception == null) return;
+
+        perception.SetConfig(config);
+
+        LogManager.Log(LogCategory.Enemy, "인지 컴포넌트 초기화 완료", this);
+    }
+
+    /// <summary>
+    /// AI 컴포넌트 초기화
+    /// </summary>
+    private void InitializeAIComponent()
+    {
+        if (ai == null) return;
+
+        // AI가 다른 컴포넌트들을 참조할 수 있도록 설정
+        ai.Initialize(this, movement, combat, perception, config);
+
+        LogManager.Log(LogCategory.Enemy, "AI 컴포넌트 초기화 완료", this);
+    }
+
+    /// <summary>
+    /// 네트워크 동기화 컴포넌트 초기화
+    /// </summary>
+    private void InitializeNetworkSyncComponent()
+    {
+        if (networkSync == null) return;
+
+        // 네트워크 동기화가 모든 컴포넌트를 참조할 수 있도록 설정
+        networkSync.Initialize(this);
+
+        LogManager.Log(LogCategory.Enemy, "네트워크 동기화 컴포넌트 초기화 완료", this);
     }
     
     /// <summary>
@@ -333,28 +380,7 @@ public class EnemyController : NetworkBehaviour
         LogManager.Log(LogCategory.Enemy, "컴포넌트 정리 완료", this);
     }
     
-    /// <summary>
-    /// 네트워크 동기화 업데이트
-    /// </summary>
-    private void UpdateNetworkSync()
-    {
-        if (Time.time - lastSyncTime < syncInterval) return;
-        
-        // 현재 상태 데이터 생성
-        EnemyStateData newStateData = ai?.CreateNetworkSyncData() ?? new EnemyStateData(transform.position, CurrentStateType);
-        
-        // 상태 데이터가 변경되었는지 확인
-        if (!syncStateData.Value.Equals(newStateData))
-        {
-            syncStateData.Value = newStateData.UpdateTimestamp();
-            lastSyncTime = Time.time;
-            
-            // 이벤트 발생
-            OnStateDataChanged?.Invoke(syncStateData.Value);
-            
-            LogManager.Log(LogCategory.Enemy, $"상태 동기화: {newStateData.currentState.ToDisplayString()}", this);
-        }
-    }
+
     
     // ========== Gizmos ==========
     
@@ -392,8 +418,5 @@ public class EnemyController : NetworkBehaviour
         {
             AssignComponents();
         }
-        
-        // 설정값 검증
-        if (syncInterval < 0.01f) syncInterval = 0.1f;
     }
 } 

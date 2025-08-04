@@ -123,10 +123,9 @@ public class AgentNetworkSync : NetworkBehaviour
     }
     
     // ✅ NetworkConnection 정보를 포함한 데미지 처리
-    [ServerRpc]
     public virtual void RequestTakeDamage(float damage, Vector2 hitDirection, NetworkConnection attacker = null)
     {
-        if (agentState != null && !syncIsDead.Value)
+        if (agentState && !syncIsDead.Value)
         {
             LogManager.Log(LogCategory.Player, $"{gameObject.name} 서버에서 데미지 처리: {damage} (공격자: {attacker?.ClientId})", this);
             

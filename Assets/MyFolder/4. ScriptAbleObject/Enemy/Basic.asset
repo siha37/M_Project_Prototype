@@ -12,22 +12,23 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 17af585200eb15141a26b6533025b6f0, type: 3}
   m_Name: Basic
   m_EditorClassIdentifier: 
-  detectionRange: 40.8
-  attackRange: 6
+  detectionRange: 40
+  attackRange: 4
   loseTargetRange: 65
   fieldOfViewAngle: 90
   defaultSpeed: 3
   chaseSpeed: 4
-  stoppingDistance: 5
+  stoppingDistance: 3.5
   rotationSpeed: 5
+  strafingAble: 1
   strafeDistance: 3
   strafeChangeInterval: 2
   strafeSpeedMultiplier: 1.2
   pathUpdateInterval: 0.5
-  minDistanceToTarget: 5
-  retreatDistance: 8
+  minDistanceToTarget: 1
+  retreatDistance: 4
   aimPrecision: 0.3
-  attackInterval: 0.3
+  attackInterval: 0.5
   obstacleLayer:
     serializedVersion: 2
     m_Bits: 128

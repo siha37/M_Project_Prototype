@@ -1,13 +1,11 @@
 using System.Collections;
 using UnityEngine;
-using FishNet.Object;
-using FishNet.Object.Synchronizing;
 
 /// <summary>
 /// 적 전투 컴포넌트
 /// 조준, 발사, 재장전, 탄약 관리 등을 담당
 /// </summary>
-public class EnemyCombat : NetworkBehaviour
+public class EnemyCombat : MonoBehaviour
 {
     [Header("=== 전투 설정 ===")]
     [SerializeField] private float reloadTime = 2f;
@@ -25,18 +23,17 @@ public class EnemyCombat : NetworkBehaviour
     [SerializeField] private bool showAimLine = true;
     [SerializeField] private bool showFirePoint = true;
     
-    // 네트워크 동기화
-    private readonly SyncVar<int> syncCurrentAmmo = new SyncVar<int>();
-    private readonly SyncVar<bool> syncIsReloading = new SyncVar<bool>();
-    private readonly SyncVar<float> syncLookAngle = new SyncVar<float>();
-    
     // 전투 상태
-    private int currentAmmo;
+    [SerializeField] private int currentAmmo;
     private bool isReloading;
     private float lastFireTime;
     private float reloadStartTime;
+    private float finalAngle;
     private Vector3 currentAimTarget;
     private bool canShoot;
+    
+    // 컴포넌트 참조
+    private EnemyNetworkSync networkSync;
     
     // 이벤트
     public System.Action OnShoot;
@@ -49,7 +46,7 @@ public class EnemyCombat : NetworkBehaviour
     /// <summary>
     /// 현재 탄약 수
     /// </summary>
-    public int CurrentAmmo => syncCurrentAmmo.Value;
+    public int CurrentAmmo => currentAmmo;
     
     /// <summary>
     /// 최대 탄약 수
@@ -59,7 +56,7 @@ public class EnemyCombat : NetworkBehaviour
     /// <summary>
     /// 재장전 중인지 여부
     /// </summary>
-    public bool IsReloading => syncIsReloading.Value;
+    public bool IsReloading => isReloading;
     
     /// <summary>
     /// 발사 가능한지 여부
@@ -69,7 +66,7 @@ public class EnemyCombat : NetworkBehaviour
     /// <summary>
     /// 현재 조준 각도
     /// </summary>
-    public float LookAngle => syncLookAngle.Value;
+    public float LookAngle => finalAngle;
     
     /// <summary>
     /// 재장전 진행률 (0.0 ~ 1.0)
@@ -87,6 +84,9 @@ public class EnemyCombat : NetworkBehaviour
     
     private void Awake()
     {
+        // 컴포넌트 참조 초기화
+        networkSync = GetComponent<EnemyNetworkSync>();
+        
         // 발사점 자동 할당
         if (firePoint == null)
         {
@@ -103,30 +103,19 @@ public class EnemyCombat : NetworkBehaviour
         
         // 초기 탄약 설정
         currentAmmo = maxAmmo;
-        syncCurrentAmmo.Value = currentAmmo;
         
         LogManager.Log(LogCategory.Enemy, "EnemyCombat 컴포넌트 초기화 완료", this);
     }
     
-    public override void OnStartServer()
+    private void Start()
     {
-        // 서버에서만 전투 로직 실행
+        // 전투 로직 초기화
         canShoot = true;
-        
-        LogManager.Log(LogCategory.Enemy, "EnemyCombat 서버 초기화 완료", this);
-    }
-    
-    public override void OnStartClient()
-    {
-        // 클라이언트에서는 시각화만
-        LogManager.Log(LogCategory.Enemy, "EnemyCombat 클라이언트 초기화 완료", this);
+        LogManager.Log(LogCategory.Enemy, "EnemyCombat 초기화 완료", this);
     }
     
     private void Update()
     {
-        // 서버에서만 전투 업데이트
-        if (!IsServerInitialized) return;
-        
         // 재장전 업데이트
         UpdateReload();
         
@@ -141,34 +130,35 @@ public class EnemyCombat : NetworkBehaviour
     /// </summary>
     public void AimAt(Vector3 targetPosition)
     {
-        if (!IsServerInitialized) return;
-        
         currentAimTarget = targetPosition;
         
         // 조준 각도 계산
         Vector2 direction = (targetPosition - transform.position).normalized;
         float targetAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         
+        // 조준 적용
+        if (shotPivot)
+        {
+            shotPivot.rotation = Quaternion.Euler(0, 0, targetAngle);
+        }
+        
         // 조준 정밀도 적용 (약간의 오차 추가)
         float aimError = Random.Range(-aimPrecision * 90f, aimPrecision * 90f);
-        float finalAngle = targetAngle + aimError;
+        finalAngle = targetAngle + aimError;
         
         // 각도 정규화
         finalAngle = Mathf.Repeat(finalAngle, 360f);
         
-        // 조준 적용
-        syncLookAngle.Value = finalAngle;
-        shotPivot.rotation = Quaternion.Euler(0, 0, finalAngle);
-        
         LogManager.Log(LogCategory.Enemy, $"조준: {targetPosition} (각도: {finalAngle:F1}°)", this);
     }
+    
     
     /// <summary>
     /// 발사 시도
     /// </summary>
     public bool TryShoot()
     {
-        if (!IsServerInitialized || !CanShoot) return false;
+        if (!CanShoot) return false;
         
         // 발사 쿨다운 체크
         if (Time.time - lastFireTime < fireRate) return false;
@@ -178,7 +168,6 @@ public class EnemyCombat : NetworkBehaviour
         
         // 탄약 감소
         currentAmmo--;
-        syncCurrentAmmo.Value = currentAmmo;
         
         // 발사 시간 업데이트
         lastFireTime = Time.time;
@@ -196,10 +185,9 @@ public class EnemyCombat : NetworkBehaviour
     /// </summary>
     public void StartReload()
     {
-        if (!IsServerInitialized || isReloading) return;
+        if (isReloading) return;
         
         isReloading = true;
-        syncIsReloading.Value = true;
         reloadStartTime = Time.time;
         
         LogManager.Log(LogCategory.Enemy, "재장전 시작", this);
@@ -213,8 +201,6 @@ public class EnemyCombat : NetworkBehaviour
     /// </summary>
     public void ForceCompleteReload()
     {
-        if (!IsServerInitialized) return;
-        
         CompleteReload();
     }
     
@@ -223,10 +209,7 @@ public class EnemyCombat : NetworkBehaviour
     /// </summary>
     public void AddAmmo(int amount)
     {
-        if (!IsServerInitialized) return;
-        
         currentAmmo = Mathf.Min(currentAmmo + amount, maxAmmo);
-        syncCurrentAmmo.Value = currentAmmo;
         
         LogManager.Log(LogCategory.Enemy, $"탄약 추가: +{amount} (총 {currentAmmo})", this);
     }
@@ -236,10 +219,7 @@ public class EnemyCombat : NetworkBehaviour
     /// </summary>
     public void SetAmmo(int amount)
     {
-        if (!IsServerInitialized) return;
-        
         currentAmmo = Mathf.Clamp(amount, 0, maxAmmo);
-        syncCurrentAmmo.Value = currentAmmo;
         
         LogManager.Log(LogCategory.Enemy, $"탄약 설정: {currentAmmo}", this);
     }
@@ -249,8 +229,6 @@ public class EnemyCombat : NetworkBehaviour
     /// </summary>
     public void SetCanShoot(bool _canShoot)
     {
-        if (!IsServerInitialized) return;
-        
         this.canShoot = _canShoot;
         
         LogManager.Log(LogCategory.Enemy, $"발사 가능 설정: {_canShoot}", this);
@@ -261,8 +239,6 @@ public class EnemyCombat : NetworkBehaviour
     /// </summary>
     public void SetFireRate(float newFireRate)
     {
-        if (!IsServerInitialized) return;
-        
         fireRate = Mathf.Max(0.1f, newFireRate);
         
         LogManager.Log(LogCategory.Enemy, $"발사 속도 변경: {fireRate}", this);
@@ -273,16 +249,13 @@ public class EnemyCombat : NetworkBehaviour
     /// </summary>
     public void SetAimPrecision(float precision)
     {
-        if (!IsServerInitialized) return;
-
         aimPrecision = precision;
         
-        LogManager.Log(LogCategory.Enemy, $"정확도 변경: {reloadTime}", this);
+        LogManager.Log(LogCategory.Enemy, $"정확도 변경: {aimPrecision}", this);
     }
 
     public void SetReloadTime(float _reloadTime)
     {
-        if (!IsServerInitialized) return;
         reloadTime = _reloadTime;
     }
     
@@ -293,31 +266,15 @@ public class EnemyCombat : NetworkBehaviour
     /// </summary>
     private void FireProjectile()
     {
-        if (!firePoint) return;
-        
-        // 발사 위치와 방향 계산
-        Vector3 firePosition = firePoint.position;
-        Vector3 fireDirection = firePoint.right; // Z축 기준 오른쪽 방향
-        float angle = Mathf.Atan2(fireDirection.y, fireDirection.x) * Mathf.Rad2Deg;
-        // ✅ BulletManager 초기화 확인 및 대기
-        if (!BulletManager.Instance)
+        if (BulletManager.Instance)
         {
-            LogManager.LogWarning(LogCategory.Projectile, $"{gameObject.name} BulletManager 초기화 대기 중...", this);
-            StartCoroutine(WaitForBulletManagerAndShoot());
-            return;
+            // ✅ 적군 AI는 NetworkConnection 대신 GameObject 참조로 식별
+            Vector3 firePos = firePoint.position;
+            float fireAngle = finalAngle;
+            
+            // ✅ 적군 AI용 별도 발사 메서드 사용
+            BulletManager.Instance.FireBulletForEnemy(firePos, fireAngle,AgentState.bulletSpeed , AgentState.bulletDamage, AgentState.bulletRange, gameObject);
         }
-        
-        
-        // ✅ BulletManager Pool 시스템 활용 (성능 최적화)
-        BulletManager.Instance.FireBulletWithConnection(
-            firePosition,
-            angle, 
-            AgentState.bulletSpeed,
-            AgentState.bulletDamage,
-            AgentState.bulletRange,
-            base.Owner  // ✅ NetworkConnection 전달
-        );
-        
     }
     
     
@@ -344,6 +301,9 @@ public class EnemyCombat : NetworkBehaviour
             LogManager.LogError(LogCategory.Projectile, $"{gameObject.name} BulletManager 초기화 타임아웃! 발사 취소", this);
         }
     }
+
+
+    
     /// <summary>
     /// 재장전 업데이트
     /// </summary>
@@ -367,12 +327,8 @@ public class EnemyCombat : NetworkBehaviour
     /// </summary>
     private void CompleteReload()
     {
-        if (!IsServerInitialized) return;
-        
         isReloading = false;
-        syncIsReloading.Value = false;
         currentAmmo = maxAmmo;
-        syncCurrentAmmo.Value = currentAmmo;
         
         LogManager.Log(LogCategory.Enemy, "재장전 완료", this);
         
@@ -387,11 +343,7 @@ public class EnemyCombat : NetworkBehaviour
     {
         // 발사 가능 여부 업데이트
         bool newCanShoot = !isReloading && currentAmmo > 0 && (Time.time - lastFireTime >= fireRate);
-        
-        if (canShoot != newCanShoot)
-        {
-            canShoot = newCanShoot;
-        }
+        canShoot = newCanShoot;
     }
     
     // ========== Gizmos ==========

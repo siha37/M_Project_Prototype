@@ -1,13 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
-using FishNet.Object;
-using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Data;
 
 /// <summary>
 /// 적 인지 시스템 컴포넌트 (2D 버전)
 /// 시야 확인, 장애물 감지, 타겟 탐지 등을 담당
 /// </summary>
-public class EnemyPerception : NetworkBehaviour
+public class EnemyPerception : MonoBehaviour
 {
     [SerializeField] EnemyConfig config;
     
@@ -85,25 +83,16 @@ public class EnemyPerception : NetworkBehaviour
         LogManager.Log(LogCategory.Enemy, "EnemyPerception 컴포넌트 초기화 완료", this);
     }
     
-    public override void OnStartServer()
+    private void Start()
     {
-        // 서버에서만 인지 로직 실행
-        LogManager.Log(LogCategory.Enemy, "EnemyPerception 서버 초기화 완료", this);
-    }
-    
-    public override void OnStartClient()
-    {
-        // 클라이언트에서는 시각화만
-        LogManager.Log(LogCategory.Enemy, "EnemyPerception 클라이언트 초기화 완료", this);
+        // 인지 시스템 초기화
+        LogManager.Log(LogCategory.Enemy, "EnemyPerception 초기화 완료", this);
     }
     
     private void Update()
     {
-        // 서버에서만 인지 업데이트
-        if (!IsServerInitialized) return;
-        
         // 시야 확인 간격 체크
-        if (Time.time - lastVisionCheckTime >= config.visionCheckInterval)
+        if (config != null && Time.time - lastVisionCheckTime >= config.visionCheckInterval)
         {
             UpdatePerception();
             lastVisionCheckTime = Time.time;
@@ -137,8 +126,6 @@ public class EnemyPerception : NetworkBehaviour
     /// </summary>
     public Transform[] DetectTargetsInRange()
     {
-        if (!IsServerOnlyInitialized) return new Transform[0];
-        
         // 범위 내 콜라이더 탐지 (2D)
         detectedTargets = Physics2D.OverlapCircleAll(transform.position, DetectionRange, config.targetLayer,0);
         
@@ -193,7 +180,7 @@ public class EnemyPerception : NetworkBehaviour
         
         // 현재 타겟이 있으면 타겟 방향을 기준으로, 없으면 기본 방향 사용
         Vector2 baseDirection;
-        if (CurrentTarget)
+        if (CurrentTarget != null)
         {
             // 현재 타겟 방향을 기준으로 설정
             baseDirection = ((Vector2)CurrentTarget.position - (Vector2)transform.position).normalized;
@@ -232,14 +219,14 @@ public class EnemyPerception : NetworkBehaviour
     /// <summary>
     /// 타겟 설정 (시야각 기준점 업데이트용)
     /// </summary>
-    public void SetTarget(Transform oldtarget,Transform newtarget)
+    public void SetTarget(Transform target)
     {
-        currentTarget = newtarget;
+        currentTarget = target;
         
-        if (newtarget)
+        if (target)
         {
-            lastSeenPosition = newtarget.position;
-            LogManager.Log(LogCategory.Enemy, $"EnemyPerception 타겟 설정: {newtarget.name}", this);
+            lastSeenPosition = target.position;
+            LogManager.Log(LogCategory.Enemy, $"EnemyPerception 타겟 설정: {target.name}", this);
         }
         else
         {
@@ -251,11 +238,7 @@ public class EnemyPerception : NetworkBehaviour
     {
         this.config = _config; 
     }
-
-    public void SetEvent(EnemyAI ai)
-    {
-        ai.Events.OnTargetChanged += SetTarget;
-    }
+    
     // ========== Private Methods ==========
     
     /// <summary>

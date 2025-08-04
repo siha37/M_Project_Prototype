@@ -250,7 +250,7 @@ public class ChaseState : EnemyAIState
     private void HandleChaseMovement(EnemyAI ai)
     {
         var config = GetConfig(ai);
-        if (config == null || ai.CurrentTarget == null) return;
+        if (!config || !ai.CurrentTarget) return;
         
         // 경로 업데이트 간격 체크
         if (Time.time - lastPathUpdateTime >= config.pathUpdateInterval)
@@ -264,7 +264,7 @@ public class ChaseState : EnemyAIState
             if (useStrafing)
             {
                 // 회피 기동으로 이동
-                if (ai.Movement != null)
+                if (ai.Movement)
                 {
                     ai.Movement.StrafeAroundTarget(ai.CurrentTarget.position);
                 }
@@ -275,7 +275,7 @@ public class ChaseState : EnemyAIState
             else
             {
                 // 직접 추적
-                if (ai.Movement != null)
+                if (ai.Movement)
                 {
                     ai.Movement.MoveTo(ai.CurrentTarget.position);
                 }
@@ -297,7 +297,7 @@ public class ChaseState : EnemyAIState
     private bool ShouldUseStrafing(EnemyAI ai)
     {
         var config = GetConfig(ai);
-        if (config == null || ai.CurrentTarget == null) return false;
+        if (!config || !ai.CurrentTarget || !config.strafingAble) return false;
         
         float distanceToTarget = GetDistanceToTarget(ai);
         

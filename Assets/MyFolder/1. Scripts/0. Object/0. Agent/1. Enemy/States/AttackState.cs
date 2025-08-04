@@ -46,7 +46,7 @@ public class AttackState : EnemyAIState
     public override void Update(EnemyAI ai)
     {
         var config = GetConfig(ai);
-        if (config == null) return;
+        if (!config) return;
         
         // 타겟 유효성 확인
         if (!IsTargetValid(ai))

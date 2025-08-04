@@ -1,13 +1,11 @@
 using UnityEngine;
 using UnityEngine.AI;
-using FishNet.Object;
-using UnityEditor.Hardware;
 
 /// <summary>
 /// 적 이동 컴포넌트
 /// NavMesh 기반 이동, 회피 기동, 속도 제어 등을 담당
 /// </summary>
-public class EnemyMovement : NetworkBehaviour
+public class EnemyMovement : MonoBehaviour
 {
     [Header("=== 이동 설정 ===")]
     [SerializeField] private float defaultSpeed = 3f;
@@ -85,32 +83,21 @@ public class EnemyMovement : NetworkBehaviour
         LogManager.Log(LogCategory.Enemy, "EnemyMovement 컴포넌트 초기화 완료", this);
     }
     
-    public override void OnStartServer()
+    private void Start()
     {
-        // 서버에서만 이동 로직 실행
+        // NavMesh Agent 초기화
         if (agent == null) return;
         
         // NavMesh Agent 활성화
         agent.enabled = true;
         
-        LogManager.Log(LogCategory.Enemy, "EnemyMovement 서버 초기화 완료", this);
-    }
-    
-    public override void OnStartClient()
-    {
-        // 클라이언트에서는 NavMesh Agent 비활성화 (서버에서만 제어)
-        if (agent != null && !IsServerInitialized)
-        {
-            agent.enabled = false;
-        }
-        
-        LogManager.Log(LogCategory.Enemy, "EnemyMovement 클라이언트 초기화 완료", this);
+        LogManager.Log(LogCategory.Enemy, "EnemyMovement 초기화 완료", this);
     }
     
     private void Update()
     {
-        // 서버에서만 이동 업데이트
-        if (!IsServerInitialized || !agent) return;
+        // 이동 업데이트
+        if (!agent) return;
         
         // 이동 상태 업데이트
         UpdateMovementState();
@@ -126,7 +113,7 @@ public class EnemyMovement : NetworkBehaviour
     /// </summary>
     public void MoveTo(Vector3 destination)
     {
-        if (!IsServerInitialized || !agent) return;
+        if (!agent) return;
         
         // NavMesh 위의 유효한 위치인지 확인
         if (NavMesh.SamplePosition(destination, out NavMeshHit hit, 5f, NavMesh.AllAreas))
@@ -154,7 +141,7 @@ public class EnemyMovement : NetworkBehaviour
     /// </summary>
     public void Stop()
     {
-        if (!IsServerInitialized || agent == null) return;
+        if (agent == null) return;
         
         agent.isStopped = true;
         isMoving = false;
@@ -171,7 +158,7 @@ public class EnemyMovement : NetworkBehaviour
     /// </summary>
     public void Resume()
     {
-        if (!IsServerInitialized || agent == null) return;
+        if (agent == null) return;
         
         agent.isStopped = false;
         isMoving = true;
@@ -238,7 +225,7 @@ public class EnemyMovement : NetworkBehaviour
     /// </summary>
     public void StrafeAroundTarget(Vector3 targetPosition)
     {
-        if (!IsServerInitialized || !agent) return;
+        if (!agent) return;
         
         // 회피 기동 방향 변경
         if (Time.time - lastStrafeChangeTime >= strafeChangeInterval)

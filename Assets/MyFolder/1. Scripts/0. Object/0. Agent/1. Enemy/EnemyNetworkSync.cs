@@ -9,7 +9,7 @@ using MyFolder._1._Scripts._3._SingleTone;
 /// 기존의 여러 개별 SyncVar을 하나의 EnemyStateData로 통합
 /// 새로운 컴포넌트 기반 구조와 연동
 /// </summary>
-public class EnemyNetworkSync : NetworkBehaviour
+public class EnemyNetworkSync : AgentNetworkSync
 {
     [Header("=== 네트워크 동기화 설정 ===")]
     [SerializeField] private float syncInterval = 0.1f; // 10 FPS 동기화
@@ -68,16 +68,6 @@ public class EnemyNetworkSync : NetworkBehaviour
     public float LookAngle => syncStateData.Value.lookAngle;
     
     /// <summary>
-    /// 공격 중인지 여부
-    /// </summary>
-    public bool IsAttacking => syncStateData.Value.isAttacking;
-    
-    /// <summary>
-    /// 재장전 중인지 여부
-    /// </summary>
-    public bool IsReloading => syncStateData.Value.isReloading;
-    
-    /// <summary>
     /// 추적 중인지 여부
     /// </summary>
     public bool IsChasing => syncStateData.Value.isChasing;
@@ -130,19 +120,6 @@ public class EnemyNetworkSync : NetworkBehaviour
         }
     }
     
-    private void Update()
-    {
-        // 서버에서만 동기화 업데이트
-        if (!IsServer || !isInitialized) return;
-        
-        // 동기화 간격 체크
-        if (Time.time - lastSyncTime >= syncInterval)
-        {
-            UpdateStateData();
-            lastSyncTime = Time.time;
-        }
-    }
-    
     // ========== Public Methods ==========
     
     /// <summary>
@@ -163,7 +140,7 @@ public class EnemyNetworkSync : NetworkBehaviour
     /// </summary>
     public void UpdateFromAI(EnemyAI ai)
     {
-        if (!IsServer || ai == null) return;
+        if (!IsServerInitialized || !ai) return;
         
         // AI로부터 상태 데이터 생성
         EnemyStateData newStateData = ai.CreateNetworkSyncData();
@@ -186,7 +163,7 @@ public class EnemyNetworkSync : NetworkBehaviour
     /// </summary>
     public void ForceUpdateStateData(EnemyStateData stateData)
     {
-        if (!IsServer) return;
+        if (!IsServerInitialized) return;
         
         syncStateData.Value = stateData.UpdateTimestamp();
         lastSyncedData = stateData;
@@ -199,7 +176,7 @@ public class EnemyNetworkSync : NetworkBehaviour
     /// </summary>
     public void ForceSetState(EnemyAIStateType state)
     {
-        if (!IsServer) return;
+        if (!IsServerInitialized) return;
         
         var newStateData = syncStateData.Value.WithState(state);
         syncStateData.Value = newStateData.UpdateTimestamp();
@@ -213,7 +190,7 @@ public class EnemyNetworkSync : NetworkBehaviour
     /// </summary>
     public void SetTarget(int clientId)
     {
-        if (!IsServer) return;
+        if (!IsServerInitialized) return;
         
         var newStateData = syncStateData.Value;
         newStateData.targetClientId = clientId;
@@ -229,7 +206,7 @@ public class EnemyNetworkSync : NetworkBehaviour
     /// </summary>
     public void UpdatePosition(Vector3 currentPos, Vector3 targetPos)
     {
-        if (!IsServer) return;
+        if (!IsServerInitialized) return;
         
         var newStateData = syncStateData.Value.WithPosition(currentPos, targetPos);
         syncStateData.Value = newStateData.UpdateTimestamp();
@@ -241,11 +218,65 @@ public class EnemyNetworkSync : NetworkBehaviour
     /// </summary>
     public void UpdateCombatState(bool attacking, bool reloading, float angle)
     {
-        if (!IsServer) return;
+        if (!IsServerInitialized) return;
         
         var newStateData = syncStateData.Value.WithCombat(attacking, reloading, angle);
         syncStateData.Value = newStateData.UpdateTimestamp();
         lastSyncedData = newStateData;
+    }
+    
+    /// <summary>
+    /// 상태 변경 이벤트 (이벤트 기반 동기화)
+    /// </summary>
+    public void OnStateChanged(EnemyAIStateType newState)
+    {
+        if (!IsServerInitialized) return;
+        
+        var newData = syncStateData.Value.WithState(newState);
+        syncStateData.Value = newData.UpdateTimestamp();
+        lastSyncedData = newData;
+        
+        LogManager.Log(LogCategory.Enemy, $"상태 변경 동기화: {newState.ToDisplayString()}", this);
+    }
+    
+    /// <summary>
+    /// 타겟 변경 이벤트 (이벤트 기반 동기화)
+    /// </summary>
+    public void OnServerTargetChanged(int clientId)
+    {
+        if (!IsServerInitialized) return;
+        
+        var newData = syncStateData.Value;
+        newData.targetClientId = clientId;
+        newData.hasValidTarget = clientId >= 0;
+        syncStateData.Value = newData.UpdateTimestamp();
+        lastSyncedData = newData;
+        
+        LogManager.Log(LogCategory.Enemy, $"타겟 변경 동기화: ClientId {clientId}", this);
+    }
+    
+    /// <summary>
+    /// 위치 변경 이벤트 (이벤트 기반 동기화)
+    /// </summary>
+    public void OnPositionChanged(Vector3 currentPos, Vector3 targetPos)
+    {
+        if (!IsServerInitialized) return;
+        
+        var newData = syncStateData.Value.WithPosition(currentPos, targetPos);
+        syncStateData.Value = newData.UpdateTimestamp();
+        lastSyncedData = newData;
+    }
+    
+    /// <summary>
+    /// 전투 상태 변경 이벤트 (이벤트 기반 동기화)
+    /// </summary>
+    public void OnCombatStateChanged(bool attacking, bool reloading, float angle)
+    {
+        if (!IsServerInitialized) return;
+        
+        var newData = syncStateData.Value.WithCombat(attacking, reloading, angle);
+        syncStateData.Value = newData.UpdateTimestamp();
+        lastSyncedData = newData;
     }
     
     /// <summary>
@@ -260,8 +291,6 @@ public class EnemyNetworkSync : NetworkBehaviour
         info += $"목표: {data.targetPosition}\n";
         info += $"타겟 ClientId: {data.targetClientId}\n";
         info += $"조준 각도: {data.lookAngle:F1}°\n";
-        info += $"공격 중: {data.isAttacking}\n";
-        info += $"재장전 중: {data.isReloading}\n";
         info += $"추적 중: {data.isChasing}\n";
         info += $"회피 중: {data.isStrafing}\n";
         info += $"타임스탬프: {data.timestamp:F2}s\n";
@@ -287,7 +316,7 @@ public class EnemyNetworkSync : NetworkBehaviour
     /// </summary>
     private void UpdateStateData()
     {
-        if (ai == null) return;
+        if (!ai) return;
         
         // AI로부터 상태 데이터 생성
         EnemyStateData newStateData = ai.CreateNetworkSyncData();

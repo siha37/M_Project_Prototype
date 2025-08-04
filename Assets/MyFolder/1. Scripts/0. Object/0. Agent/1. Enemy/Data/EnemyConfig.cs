@@ -43,11 +43,15 @@ public class EnemyConfig : ScriptableObject
     [Tooltip("회전 속도")]
     [Range(1,20)]
     public float rotationSpeed = 5f;
+
+
+
+
+    [Header("=== 회피 기동 설정 ===")] 
     
+    [Tooltip("회피 기동 활성화")]
+    public bool strafingAble =false;
     
-    
-    
-    [Header("=== 회피 기동 설정 ===")]
     [Tooltip("회피 기동 거리")]
     [Range(1f, 6f)]
     public float strafeDistance = 3f;
@@ -69,7 +73,7 @@ public class EnemyConfig : ScriptableObject
     [Header("=== 전투 설정 ===")]
     [Tooltip("타겟과의 최소 유지 거리")]
     [Range(1f, 5f)]
-    public float minDistanceToTarget = 2f;
+    public float minDistanceToTarget = 0.5f;
     
     [Tooltip("후퇴 시 이동할 거리")]
     [Range(2f, 8f)]
@@ -82,6 +86,10 @@ public class EnemyConfig : ScriptableObject
     [Tooltip("공격 후 다음 공격까지의 최소 간격")]
     [Range(0.1f, 3f)]
     public float attackInterval = 0.5f;
+    
+    [Tooltip("재장전 시간")]
+    [Range(1f, 5f)]
+    public float reloadTime = 2f;
     
     
     [Header("=== 인지 설정 ===")]

@@ -94,7 +94,7 @@ public class Projectile : NetworkBehaviour
             ServerManager.Despawn(gameObject);
         }
     }
-
+/*
     private void OnTriggerEnter2D(Collider2D collision)
     {
         // 서버에서만 충돌 처리
@@ -150,7 +150,7 @@ public class Projectile : NetworkBehaviour
         // 히트 이펙트 표시
         ShowHitEffect(hitPoint);
     }
-    
+    */
     private void DestroyBullet()
     {
         if (IsServerInitialized)

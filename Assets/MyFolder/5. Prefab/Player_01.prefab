@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5718085818187926881}
   - component: {fileID: 6539953411448909880}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: ImageRender
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -756,7 +756,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4854400107744536206}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: ShotPivot
   m_TagString: Untagged
   m_Icon: {fileID: 2488908585195742037, guid: 0000000000000000d000000000000000, type: 0}
@@ -894,7 +894,7 @@ GameObject:
   m_Component:
   - component: {fileID: 9182083990198720136}
   - component: {fileID: 7445865087777146855}
-  m_Layer: 3
+  m_Layer: 0
   m_Name: ShotPoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -983,7 +983,7 @@ GameObject:
   - component: {fileID: 111115308637503192}
   - component: {fileID: 1836156854287243434}
   - component: {fileID: 3043969581841878289}
-  m_Layer: 6
+  m_Layer: 0
   m_Name: IntractArea
   m_TagString: Untagged
   m_Icon: {fileID: 0}

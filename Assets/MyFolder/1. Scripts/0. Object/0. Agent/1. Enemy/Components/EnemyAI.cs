@@ -1,13 +1,12 @@
-using UnityEngine;
 using FishNet.Object;
-using FishNet.Object.Synchronizing;
+using UnityEngine;
 using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Data;
 
 /// <summary>
 /// 적 AI 메인 컴포넌트
 /// 상태 머신을 관리하고 다른 AI 컴포넌트들과 협력
 /// </summary>
-public class EnemyAI : NetworkBehaviour
+public class EnemyAI : MonoBehaviour
 {
     private EnemyConfig config;
     
@@ -83,13 +82,6 @@ public class EnemyAI : NetworkBehaviour
     
     private void Awake()
     {
-        TryGetComponent(out EnemyController controller);
-        // 컴포넌트 자동 할당
-        if (movement == null) movement       = controller.Movement;
-        if (combat == null) combat           = controller.Combat;
-        if (perception == null) perception   = controller.Perception;
-        if (networkSync == null) networkSync = controller.NetworkSync;
-        
         // 이벤트 시스템 초기화
         events = new EnemyEvents();
         
@@ -98,40 +90,68 @@ public class EnemyAI : NetworkBehaviour
         
         LogManager.Log(LogCategory.Enemy, "EnemyAI 컴포넌트 초기화 완료", this);
     }
-    
-    public override void OnStartServer()
+
+    /// <summary>
+    /// EnemyController로부터 컴포넌트들과 설정 주입
+    /// </summary>
+    public void Initialize(EnemyController controller, EnemyMovement movement, EnemyCombat combat, 
+                          EnemyPerception perception, EnemyConfig config)
     {
-        // 서버에서만 AI 로직 실행
-        if (config == null)
-        {
-            TryGetComponent(out EnemyController controller);
-            config = controller.Config;
-        }
+        // 컴포넌트 참조 설정
+        this.movement = movement;
+        this.combat = combat;
+        this.perception = perception;
+        this.config = config;
+        this.networkSync = controller.NetworkSync;
         
         // 상태 머신 초기화
-        stateMachine.Initialize(this);
+        if (stateMachine != null)
+        {
+            stateMachine.Initialize(this);
+        }
         
         // AI 업데이트 간격 설정
-        aiUpdateInterval = config.aiUpdateInterval;
+        if (config != null)
+        {
+            aiUpdateInterval = config.aiUpdateInterval;
+        }
         
-        LogManager.Log(LogCategory.Enemy, "EnemyAI 서버 초기화 완료", this);
+        // 인지 컴포넌트에 이벤트 연결
+        if (perception != null)
+        {
+            ConnectPerceptionEvents();
+        }
+        
+        LogManager.Log(LogCategory.Enemy, "EnemyAI Initialize 완료", this);
+    }
+
+    /// <summary>
+    /// 인지 컴포넌트 이벤트 연결
+    /// </summary>
+    private void ConnectPerceptionEvents()
+    {
+        if (perception == null || events == null) return;
+
+        // 인지 이벤트와 AI 이벤트 연결
+        perception.OnTargetInSight += (target) => events.OnTargetFound?.Invoke(target);
+        perception.OnTargetOutOfSight += (target) => events.OnTargetLost?.Invoke(target);
     }
     
-    public override void OnStartClient()
+    private void Start()
     {
-        // 클라이언트에서는 시각화만
+        // 디버그 설정 적용
         if (config != null && config.showDebugInfo)
         {
             showDebugInfo = true;
         }
         
-        LogManager.Log(LogCategory.Enemy, "EnemyAI 클라이언트 초기화 완료", this);
+        LogManager.Log(LogCategory.Enemy, "EnemyAI Start 완료", this);
     }
     
     private void Update()
     {
-        // 서버에서만 AI 업데이트
-        if (!IsServerInitialized) return;
+        // AI 업데이트 (초기화 완료 확인)
+        if (!config || stateMachine == null) return;
         
         // 성능 최적화: 업데이트 간격 조절
         if (Time.time - lastAIUpdateTime < aiUpdateInterval) return;
@@ -144,7 +164,7 @@ public class EnemyAI : NetworkBehaviour
     private void FixedUpdate()
     {
         // 서버에서만 물리 업데이트
-        if (!IsServerInitialized) return;
+        if (config == null || stateMachine == null) return;
         
         stateMachine?.FixedUpdate();
     }
@@ -165,25 +185,42 @@ public class EnemyAI : NetworkBehaviour
     /// </summary>
     public void SetTarget(Transform target)
     {
+        if (config == null) return;
+        
+        // 이전 타겟과 같은지 확인
+        if (currentTarget == target) return;
+        
         Transform oldTarget = currentTarget;
         currentTarget = target;
         
-        if (target)
+        // 타겟 변경 이벤트 발생
+        if (events != null)
         {
-            lastKnownTargetPosition = target.position;
+            if (oldTarget != null)
+            {
+                events.OnTargetLost?.SafeInvoke(oldTarget);
+            }
             
-            // 타겟 변경 이벤트
-            events?.OnTargetChanged?.SafeInvoke(oldTarget, target);
-            
-            LogManager.Log(LogCategory.Enemy, $"타겟 설정: {target.name}", this);
+            if (target)
+            {
+                events.OnTargetFound?.SafeInvoke(target);
+                lastKnownTargetPosition = target.position;
+            }
         }
-        else
+        
+        // 네트워크 동기화 (이벤트 기반)
+        if (networkSync && target)
         {
-            // 타겟 제거 이벤트
-            events?.OnTargetLost?.SafeInvoke(oldTarget);
-            
-            LogManager.Log(LogCategory.Enemy, "타겟 제거", this);
+            // 타겟의 ClientId를 찾아서 동기화
+            target.TryGetComponent(out NetworkBehaviour playerObj);
+            if (playerObj)
+            {
+                int clientId = playerObj.Owner?.ClientId ?? -1;
+                networkSync.OnServerTargetChanged(clientId);
+            }
         }
+        
+        LogManager.Log(LogCategory.Enemy, $"타겟 설정: {(target?.name ?? "없음")}", this);
     }
     
     /// <summary>
@@ -191,22 +228,18 @@ public class EnemyAI : NetworkBehaviour
     /// </summary>
     public void ChangeState(EnemyAIStateType newState)
     {
-        string prevState = currentState;
-        string newStateName = newState.ToString();
-        if (stateMachine != null)
+        if (config == null || stateMachine == null) return;
+        
+        // 상태 머신을 통한 상태 변경
+        if (stateMachine.ChangeState(newState))
         {
-            bool success = stateMachine.ChangeState(newState);
+            // 네트워크 동기화 (이벤트 기반)
+            if (networkSync != null)
+            {
+                networkSync.OnStateChanged(newState);
+            }
             
-            if (success)
-            {
-                LogManager.Log(LogCategory.Enemy, $"상태 변경: {newState.ToDisplayString()}", this);
-                currentState = newStateName;
-                previousState = prevState;
-            }
-            else
-            {
-                LogManager.LogWarning(LogCategory.Enemy, $"상태 변경 실패: {newState.ToDisplayString()}", this);
-            }
+            LogManager.Log(LogCategory.Enemy, $"AI 상태 변경: {newState.ToDisplayString()}", this);
         }
     }
     
@@ -253,7 +286,7 @@ public class EnemyAI : NetworkBehaviour
             return stateMachine.CurrentState.CreateSyncData(this);
         }
         
-        return new EnemyStateData(transform.position, CurrentStateType);
+        return new EnemyStateData((Vector2)transform.position, CurrentStateType);
     }
     
     // ========== Private Methods ==========
@@ -267,13 +300,7 @@ public class EnemyAI : NetworkBehaviour
         
         // 상태 머신 업데이트
         stateMachine.Update();
-        
-        // 네트워크 동기화 (필요한 경우)
-        if (networkSync)
-        {
-            networkSync.UpdateFromAI(this);
-        }
-        
+                
         // 성능 메트릭 업데이트
         UpdatePerformanceMetrics();
     }
