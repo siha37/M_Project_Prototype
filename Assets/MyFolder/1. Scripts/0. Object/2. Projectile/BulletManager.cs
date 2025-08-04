@@ -3,7 +3,7 @@ using FishNet;
 using FishNet.Connection;
 using FishNet.Object;
 using MyFolder._1._Scripts._0._Object._0._Agent;
-using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Components;
+using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main;
 using UnityEngine;
 
 namespace MyFolder._1._Scripts._0._Object._2._Projectile

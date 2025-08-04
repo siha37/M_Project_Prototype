@@ -569,11 +569,9 @@ GameObject:
   - component: {fileID: 463563239894297547}
   - component: {fileID: -9098008235120941594}
   - component: {fileID: 6625148477299368903}
-  - component: {fileID: 1383620846897548478}
-  - component: {fileID: 7011155289200357308}
-  - component: {fileID: 3639382316815636157}
-  - component: {fileID: 6299977667988295569}
-  - component: {fileID: 5665283698749702482}
+  - component: {fileID: 950284016042230261}
+  - component: {fileID: 5020944520583478027}
+  - component: {fileID: 8637297326715198799}
   m_Layer: 9
   m_Name: Enemy
   m_TagString: Enemy
@@ -691,7 +689,7 @@ NavMeshAgent:
   m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 1
   m_AutoRepath: 1
-  m_Height: 2
+  m_Height: 0.51
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
@@ -716,11 +714,11 @@ MonoBehaviour:
   NetworkBehaviours:
   - {fileID: 463563239894297547}
   - {fileID: -9098008235120941594}
-  - {fileID: 1383620846897548478}
-  - {fileID: 7011155289200357308}
-  - {fileID: 3639382316815636157}
-  - {fileID: 6299977667988295569}
-  - {fileID: 5665283698749702482}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
   InitializedParentNetworkBehaviour: {fileID: 0}
   InitializedNestedNetworkObjects: []
   RuntimeParentNetworkBehaviour: {fileID: 0}
@@ -814,8 +812,10 @@ MonoBehaviour:
   _componentIndexCache: 1
   _addedNetworkObject: {fileID: 187507071748887718}
   _networkObjectCache: {fileID: 187507071748887718}
-  syncInterval: 0.1
-  enableDetailedLogging: 0
+  bulletPrefab: {fileID: 0}
+  bulletSpeed: 15
+  bulletLifetime: 5
+  rotationLerpSpeed: 20
 --- !u!114 &6625148477299368903
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -835,7 +835,7 @@ MonoBehaviour:
   reloadBar: {fileID: 3388597984813375007}
   reviveBar: {fileID: 0}
   ammoText: {fileID: 2729983326514950669}
---- !u!114 &1383620846897548478
+--- !u!114 &950284016042230261
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -844,22 +844,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 7989332457473997606}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d033c2a76e8945645a0530e17989d579, type: 3}
+  m_Script: {fileID: 11500000, guid: c49a6009fef047a4c8d98da5b40209eb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 2
+  _componentIndexCache: 255
   _addedNetworkObject: {fileID: 187507071748887718}
-  _networkObjectCache: {fileID: 187507071748887718}
-  ai: {fileID: 7011155289200357308}
-  movement: {fileID: 6299977667988295569}
-  combat: {fileID: 3639382316815636157}
-  perception: {fileID: 5665283698749702482}
-  networkSync: {fileID: -9098008235120941594}
+  _networkObjectCache: {fileID: 0}
   config: {fileID: 11400000, guid: 78d11a8d073963a4d8a0b40101cbcbea, type: 2}
-  autoAssignComponents: 1
-  showDebugInfo: 1
-  logStateChanges: 1
---- !u!114 &7011155289200357308
+  debugGizmos: 1
+  debugLog: 1
+--- !u!114 &5020944520583478027
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -868,16 +862,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 7989332457473997606}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d7e452ceedc81c8478d295c7dd0e589c, type: 3}
+  m_Script: {fileID: 11500000, guid: d6927ed7683b4641b0f2f4b1381fe2e5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 3
-  _addedNetworkObject: {fileID: 187507071748887718}
-  _networkObjectCache: {fileID: 187507071748887718}
-  showDebugInfo: 1
-  currentState: 
-  previousState: 
---- !u!114 &3639382316815636157
+  CurrentStateName: 
+  PreviousStateName: 
+--- !u!114 &8637297326715198799
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -886,65 +876,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 7989332457473997606}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 122392c775c2a9e42ab6b3ae8c6209a0, type: 3}
+  m_Script: {fileID: 11500000, guid: cf319fde4f144fd0a10409c133c04f5b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 4
-  _addedNetworkObject: {fileID: 187507071748887718}
-  _networkObjectCache: {fileID: 187507071748887718}
-  reloadTime: 2
-  maxAmmo: 30
-  aimPrecision: 0.1
-  fireRate: 0.5
-  firePoint: {fileID: 1769733156254832991}
-  shotPivot: {fileID: 7987831769807400613}
-  projectileSpeed: 10
-  projectileDamage: 10
-  showAimLine: 1
-  showFirePoint: 1
---- !u!114 &6299977667988295569
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7989332457473997606}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fcaafed02e9044b469796802dfe345ba, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _componentIndexCache: 5
-  _addedNetworkObject: {fileID: 187507071748887718}
-  _networkObjectCache: {fileID: 187507071748887718}
-  defaultSpeed: 3
-  stoppingDistance: 1
-  rotationSpeed: 5
-  strafeDistance: 3
-  strafeSpeedMultiplier: 1.2
-  strafeChangeInterval: 2
-  showPath: 1
-  showVelocity: 1
---- !u!114 &5665283698749702482
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7989332457473997606}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dc4eff25406762b47872b306816ba361, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _componentIndexCache: 6
-  _addedNetworkObject: {fileID: 187507071748887718}
-  _networkObjectCache: {fileID: 187507071748887718}
-  config: {fileID: 11400000, guid: 78d11a8d073963a4d8a0b40101cbcbea, type: 2}
-  eyes: {fileID: 8344417333207153853}
-  showVisionCone: 1
-  showDetectionRange: 1
-  showVisionRays: 0
 --- !u!1 &8828214184213655894
 GameObject:
   m_ObjectHideFlags: 0

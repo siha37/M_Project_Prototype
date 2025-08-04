@@ -26,15 +26,18 @@ public class EnemyConfig : ScriptableObject
     [Range(30f, 180f)]
     public float fieldOfViewAngle = 90f;
     
+    
+    
+    
     [Header("=== 이동 설정 ===")]
     
     [Tooltip("일반 이동 속도")]
     [Range(1f, 8f)]
     public float defaultSpeed = 3f;
     
-    [Tooltip("추적 이동 속도")]
+    [Tooltip("공격 중 이동 속도")]
     [Range(1f, 8f)]
-    public float chaseSpeed = 5f;
+    public float attackSpeed = 5f;
     
     [Tooltip("이동 최소 거리")]
     [Range(0f, 20f)]
@@ -45,6 +48,8 @@ public class EnemyConfig : ScriptableObject
     public float rotationSpeed = 5f;
 
 
+    
+    
     [Header("=== 전투 설정 ===")]
     [Tooltip("타겟과의 최소 유지 거리")]
     [Range(1f, 5f)]
@@ -81,31 +86,6 @@ public class EnemyConfig : ScriptableObject
     [Tooltip("시야 확인용 레이 개수")]
     [Range(1, 21)] 
     public int visionRayCount = 8;
-    
-    
-    
-    
-    
-    [Header("=== AI 행동 설정 ===")]
-    
-    [Tooltip("순찰 반경")]
-    [Range(3f, 30f)]
-    public float patrolRadius = 8f;
-    
-    [Tooltip("순찰 지점 대기 시간")]
-    [Range(1f, 20f)]
-    public float patrolWaitTime = 3f;
-    
-    [Tooltip("추적 포기 후 경계 시간")]
-    [Range(3f, 15f)]
-    public float alertTime = 5f;
-    
-    [Tooltip("공격 실패 시 재시도 간격")]
-    [Range(0.5f, 3f)]
-    public float attackRetryInterval = 1f;
-    
-    
-    
     
     [Header("=== 디버그 설정 ===")]
     [Tooltip("디버그 정보 표시")]
@@ -189,7 +169,6 @@ public class EnemyConfig : ScriptableObject
         loseTargetRange = 15f;
         fieldOfViewAngle = 90f;
         defaultSpeed = 3f;
-        patrolRadius = 8f;
         minDistanceToTarget = 2f;
         retreatDistance = 4f;
         aimPrecision = 0.1f;

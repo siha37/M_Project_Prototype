@@ -16,7 +16,7 @@ MonoBehaviour:
   enableNetworkLogs: 0
   enablePlayerLogs: 0
   enableEnemyLogs: 1
-  enableSpawnerLogs: 0
+  enableSpawnerLogs: 1
   enableProjectileLogs: 0
   enableUILogs: 0
   enableSystemLogs: 0

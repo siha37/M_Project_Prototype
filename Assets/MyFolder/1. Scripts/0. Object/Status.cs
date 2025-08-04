@@ -15,6 +15,11 @@ namespace MyFolder._1._Scripts._0._Object
             currentHp = maxHp;
         }
 
+        /// <summary>
+        /// 기본 피해 적용 함수
+        /// </summary>
+        /// <param name="damage"></param>
+        /// <param name="hitDirection"></param>
         public virtual void TakeDamage(float damage, Vector2 hitDirection = default)
         {
             if (isDead) return;
@@ -22,6 +27,10 @@ namespace MyFolder._1._Scripts._0._Object
             currentHp -= damage;
         }
 
+        /// <summary>
+        /// 기절 상태 - 색상만 변경
+        /// </summary>
+        /// <returns></returns>
         protected virtual IEnumerator DeathSequence()
         {
             isDead = true;
@@ -30,7 +39,7 @@ namespace MyFolder._1._Scripts._0._Object
             if (transform.childCount > 0)
             {
                 SpriteRenderer spriteRenderer = transform.GetChild(0).GetComponent<SpriteRenderer>();
-                if (spriteRenderer != null)
+                if (spriteRenderer)
                 {
                     // 어두운 보라색으로 변경
                     spriteRenderer.color = new Color(0.5f, 0f, 0.5f, 1f);
@@ -44,6 +53,9 @@ namespace MyFolder._1._Scripts._0._Object
             OnDeath();
         }
 
+        /// <summary>
+        /// 오브젝트 삭제
+        /// </summary>
         protected virtual void OnDeath()
         {
             // 기본 사망 처리 - 오브젝트 제거

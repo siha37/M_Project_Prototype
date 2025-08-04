@@ -23,6 +23,11 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent
             // ✅ UI 초기화는 NetworkSync에서 처리
         }
 
+        /// <summary>
+        /// 피해 적용 및 죽음 처리
+        /// </summary>
+        /// <param name="damage"></param>
+        /// <param name="hitDirection"></param>
         // ✅ UI 업데이트 완전 제거, 순수 데미지 계산만
         public override void TakeDamage(float damage, Vector2 hitDirection = default)
         {
