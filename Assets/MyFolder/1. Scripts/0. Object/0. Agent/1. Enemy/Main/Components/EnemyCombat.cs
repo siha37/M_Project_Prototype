@@ -86,7 +86,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main.Components
                 lastAttackTime = Time.time;
                 if (agent.NetworkSync)
                 {
-                    agent.NetworkSync.RequestShoot(finalAngle,agent.ShotPoint.position);
+                    agent.NetworkSync.ShootEnemyBullet(finalAngle, agent.ShotPoint.position);
                     if (agent.Status.bulletCurrentCount <= 0)
                         Reloading();
                 }

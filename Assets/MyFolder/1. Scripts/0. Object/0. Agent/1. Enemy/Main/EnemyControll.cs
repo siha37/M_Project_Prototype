@@ -203,7 +203,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main
 
         private void OnDrawGizmos()
         {
-            if (!debugGizmos || config) return;
+            if (!debugGizmos || !config) return;
             
             Vector2 baseDirection = Vector2.right;
             float FieldOfViewAngle = config.fieldOfViewAngle;
