@@ -4,17 +4,21 @@ using FishNet.Object;
 using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main.Components;
 using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main.Components.Interface;
 using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.States;
+using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Status;
+using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.AI;
 using Object = UnityEngine.Object;
 
 namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main
 {
     public class EnemyControll  : NetworkBehaviour
     {
-
-        private EnemyAi ai;
         private EnemyStateMachine stateMachine;
+        private EnemyStatus status;
+        private EnemyNetworkSync networkSync;
+        private NavMeshAgent navagent;
 
         [Header("===Config Setting===")]
         [SerializeField] private EnemyConfig config;
@@ -25,17 +29,25 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main
         private Dictionary<Type,IEnemyComponent> EnemyComponents = new Dictionary<Type, IEnemyComponent>();
         private List<IEnemyUpdateComponent> UpdateComponents = new List<IEnemyUpdateComponent>();
 
+        [Header("===Object Setting===")] 
+        [SerializeField] private Transform shotPivot;
+        [SerializeField] private Transform shotPoint;
+        
         [Header("===Debug Setting===")]
         [SerializeField] private bool debugGizmos = true;
         [SerializeField] private bool debugLog = true;
         
         
-        private GameObject currenttarget;
+        private GameObject currentTarget;
         
         
         public EnemyConfig Config => config;
-        public GameObject Currenttarget => currenttarget;
+        public GameObject CurrentTarget => currentTarget;
         public EnemyStateMachine StateMachine => stateMachine;
+        public EnemyNetworkSync NetworkSync => networkSync;
+        public EnemyStatus Status => status;
+        public Transform ShotPivot => shotPivot;
+        public Transform ShotPoint => shotPoint;
         
         
 
@@ -44,6 +56,17 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main
             Init();
             ComponentInit();
             EventSub();
+            StateInit();
+        }
+
+        public override void OnStartClient()
+        {
+            if(IsServerInitialized) return;
+            
+            Init();
+            stateMachine.enabled = false;
+            navagent.enabled = false;
+            transform.rotation = Quaternion.identity;
         }
 
         private void Init()
@@ -53,15 +76,17 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main
                 LogError("Config 파일이 없습니다", this);
                 return;
             }
-            TryGetComponent(out ai);
             TryGetComponent(out stateMachine);
+            TryGetComponent(out status);
+            TryGetComponent(out networkSync);
+            TryGetComponent(out navagent);
         }
 
         private void EventSub()
         {
             stateMachine.StateChangeCallback += StateChage;
         }
-
+        
         #region Component
 
         
@@ -81,7 +106,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main
             com.Init(this);
         }
 
-        private void ComponentActivate<T>(T component) where T: IEnemyComponent
+        public void ComponentActivate<T>(T component) where T: IEnemyComponent
         {
             if (AllComponents.TryGetValue(component.GetType(), out var com))
             {
@@ -90,7 +115,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main
                     UpdateComponents.Add(update_com);
             }
         }
-        private void ComponentDisactivate<T>(T component) where T: IEnemyComponent
+        public void ComponentDisactivate<T>(T component) where T: IEnemyComponent
         {
             if (EnemyComponents.TryGetValue(typeof(T), out var com))
             {
@@ -111,6 +136,11 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main
 
         #region State
 
+        private void StateInit()
+        {
+            StateMachine.Init();
+        }
+        
         /// <summary>
         /// 상태 변경 시 컴포넌트로 콜백
         /// </summary>
@@ -129,7 +159,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main
         /*==================Public ========================*/
         public void SetTarget(GameObject target)
         {
-            currenttarget = target;
+            currentTarget = target;
         }
         
         /*==================Private ========================*/
@@ -190,9 +220,9 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main
                     Gizmos.color = percetion.HasLineOfSight ? Color.green : Color.yellow;   
                     
                 
-                    if (Currenttarget != null)
+                    if (CurrentTarget != null)
                     {
-                        baseDirection = ((Vector2)Currenttarget.transform.position - (Vector2)transform.position).normalized;
+                        baseDirection = ((Vector2)CurrentTarget.transform.position - (Vector2)transform.position).normalized;
                     }
                     
                     int segments = 16;
@@ -228,10 +258,10 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main
                     
                     Gizmos.color = Color.red;
                 
-                    if (Currenttarget != null)
+                    if (CurrentTarget != null)
                     {
-                        Vector2 direction = ((Vector2)Currenttarget.transform.position - (Vector2)transform.position).normalized;
-                        float distance = Vector2.Distance(transform.position, Currenttarget.transform.position);
+                        Vector2 direction = ((Vector2)CurrentTarget.transform.position - (Vector2)transform.position).normalized;
+                        float distance = Vector2.Distance(transform.position, CurrentTarget.transform.position);
                     
                         Gizmos.DrawRay(transform.position, (Vector3)direction * distance);
                     }

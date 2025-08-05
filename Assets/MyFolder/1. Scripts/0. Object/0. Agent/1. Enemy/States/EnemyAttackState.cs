@@ -1,30 +1,43 @@
-﻿namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.States
+﻿using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main;
+using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main.Components;
+using UnityEngine;
+
+namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.States
 {
-    public class EnemyAttackState: IEnemyState
+    public class EnemyAttackState: EnemyBaseState
     {
-        public override bool CanStateChange()
+        private EnemyCombat combat;
+        private EnemyMovement movement;
+        private float lastPathUpdateTime = 0;
+        private float pathUpdateInterval;
+        public override void Init(EnemyControll controll)
         {
-            throw new System.NotImplementedException();
+            base.Init(controll);
+            combat = (EnemyCombat)agent.GetEnemyComponent(typeof(EnemyCombat));
+            movement = (EnemyMovement)agent.GetEnemyComponent(typeof(EnemyMovement));
+            pathUpdateInterval = agent.Config.aiUpdateInterval;
         }
 
         public override void Update()
         {
-            throw new System.NotImplementedException();
+            // 경로 업데이트 (성능 최적화) / 공격 중 이동 처리
+            if (Time.time - lastPathUpdateTime >= pathUpdateInterval)
+            {
+                movement.MoveTo(agent.CurrentTarget.transform.position);
+                lastPathUpdateTime = Time.time;
+            }
         }
 
         public override void OnStateEnter()
         {
-            throw new System.NotImplementedException();
+            movement.SetSpeed(agent.Config.attackSpeed);
+            combat.AttackOn();
         }
 
         public override void OnStateExit()
         {
-            throw new System.NotImplementedException();
+            combat.AttackOff();
         }
 
-        public override string GetName()
-        {
-            return GetType().Name;
-        }
     }
 }

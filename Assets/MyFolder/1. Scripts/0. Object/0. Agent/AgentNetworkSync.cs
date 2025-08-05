@@ -159,7 +159,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent
     
         protected virtual void UpdateDamageSyncVars()
         {
-            if (AgentStatus != null)
+            if (AgentStatus)
             {
                 syncCurrentHp.Value = AgentStatus.currentHp;
                 syncIsDead.Value = AgentStatus.IsDead;
@@ -195,7 +195,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent
         [ServerRpc]
         public virtual void RequestShoot(float angle, Vector3 shotPosition)
         {
-            LogManager.Log(LogCategory.Player, $"{gameObject.name} 서버에서 발사 처리: {angle} : {shotPosition}", this);
+            LogManager.Log(LogCategory.Projectile, $"{gameObject.name} 서버에서 발사 처리: {angle} : {shotPosition}", this);
         
             // ✅ BulletManager 초기화 확인 및 대기
             if (!BulletManager.Instance)
@@ -316,7 +316,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent
         protected virtual void OnIsReloadingChanged(bool oldValue, bool newValue, bool asServer)
         {
             // ✅ 재장전 UI 업데이트
-            if (agentUI != null)
+            if (agentUI)
             {
                 if (newValue)
                 {

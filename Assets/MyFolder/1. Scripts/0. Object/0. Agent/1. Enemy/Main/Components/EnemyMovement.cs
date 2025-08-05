@@ -128,7 +128,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main.Components
         public void SetStoppingDistance(float stopDistance)
         {
             if(navMeshAgent)
-                navMeshAgent.speed = stopDistance;
+                navMeshAgent.stoppingDistance = stopDistance;
         }
         
         /// <summary>
@@ -166,9 +166,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main.Components
             if (isMoving && HasReachedDestination)
             {
                 isMoving = false;
-            
                 LogManager.Log(LogCategory.Enemy, $"목적지 도달: {currentDestination}");
-           
             }
         
             // 경로 업데이트 (성능 최적화)

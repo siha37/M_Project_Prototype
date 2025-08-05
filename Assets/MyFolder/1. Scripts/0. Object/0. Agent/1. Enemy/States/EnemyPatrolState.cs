@@ -2,13 +2,8 @@
 
 namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.States
 {
-    public class EnemyPatrolState: IEnemyState
+    public class EnemyPatrolState: EnemyBaseState
     {
-        public override bool CanStateChange()
-        {
-            return true;
-        }
-
         public override void Update()
         {
             
@@ -21,11 +16,6 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.States
         public override void OnStateExit()
         {
             
-        }
-
-        public override string GetName()
-        {
-            return GetType().Name;
         }
     }
 }

@@ -166,9 +166,13 @@ public class PlayerControll : NetworkBehaviour
     private void AttackTrigger()
     {
         if (!canShoot || isReloading) return;
-
+        if (status.bulletCurrentCount <= 0)
+        {
+            ReloadTrigger();
+            return;
+        }
         // 네트워크 동기화된 발사 처리
-        if (networkSync != null)
+        if (networkSync)
         {
             // 서버에 발사 요청 (네트워크 동기화)
             networkSync.RequestShoot(lookAngle, shotPoint.position);
@@ -185,13 +189,12 @@ public class PlayerControll : NetworkBehaviour
     }
 
     // ✅ 로컬 Reload 메서드 제거 - NetworkSync에서 처리
-    
     private void ReloadTrigger()
     {
         if (!isReloading && status.bulletCurrentCount < AgentStatus.bulletMaxCount)
         {
             // ✅ 네트워크 동기화만 사용 (폴백 방식 제거)
-            if (networkSync != null)
+            if (networkSync)
             {
                 networkSync.RequestReload();
             }

@@ -571,7 +571,7 @@ GameObject:
   - component: {fileID: 6625148477299368903}
   - component: {fileID: 950284016042230261}
   - component: {fileID: 5020944520583478027}
-  - component: {fileID: 8637297326715198799}
+  - component: {fileID: 6057623658939490892}
   m_Layer: 9
   m_Name: Enemy
   m_TagString: Enemy
@@ -737,9 +737,9 @@ MonoBehaviour:
   _enableStateForwarding: 1
   _networkTransform: {fileID: 0}
   _ownerInterpolation: 1
-  _ownerSmoothedProperties: 255
+  _ownerSmoothedProperties: 4294967295
   _adaptiveInterpolation: 3
-  _spectatorSmoothedProperties: 255
+  _spectatorSmoothedProperties: 4294967295
   _spectatorInterpolation: 2
   _enableTeleport: 0
   _teleportThreshold: 1
@@ -851,6 +851,8 @@ MonoBehaviour:
   _addedNetworkObject: {fileID: 187507071748887718}
   _networkObjectCache: {fileID: 0}
   config: {fileID: 11400000, guid: 78d11a8d073963a4d8a0b40101cbcbea, type: 2}
+  shotPivot: {fileID: 7987831769807400613}
+  shotPoint: {fileID: 1769733156254832991}
   debugGizmos: 1
   debugLog: 1
 --- !u!114 &5020944520583478027
@@ -867,7 +869,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   CurrentStateName: 
   PreviousStateName: 
---- !u!114 &8637297326715198799
+--- !u!114 &6057623658939490892
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -876,9 +878,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 7989332457473997606}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cf319fde4f144fd0a10409c133c04f5b, type: 3}
+  m_Script: {fileID: 11500000, guid: b807a6d96adc47eea1afcdde839b3027, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  currentHp: 0
+  isDead: 0
+  bulletCurrentCount: 0
 --- !u!1 &8828214184213655894
 GameObject:
   m_ObjectHideFlags: 0

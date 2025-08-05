@@ -66,13 +66,13 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main.Components
             // 현재 타겟에 대한 시야 확인
             bool currentLineOfSight = false;
         
-            if (agent.Currenttarget)
+            if (agent.CurrentTarget)
             {
-                currentLineOfSight = LineOfSight(agent.Currenttarget.transform);
+                currentLineOfSight = LineOfSight(agent.CurrentTarget.transform);
             
                 if (currentLineOfSight)
                 {
-                    lastSeenPosition = agent.Currenttarget.transform.position;
+                    lastSeenPosition = agent.CurrentTarget.transform.position;
                 }
             }
         
@@ -83,11 +83,11 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main.Components
             
                 if (hasLineOfSight)
                 {
-                    LogManager.Log(LogCategory.Enemy, $"타겟 시야 확보: {agent.Currenttarget?.name}");
+                    LogManager.Log(LogCategory.Enemy, $"타겟 시야 확보: {agent.CurrentTarget?.name}");
                 }
                 else
                 {
-                    LogManager.Log(LogCategory.Enemy, $"타겟 시야 상실: {agent.Currenttarget?.name}");
+                    LogManager.Log(LogCategory.Enemy, $"타겟 시야 상실: {agent.CurrentTarget?.name}");
                 }
             }
         }
@@ -99,11 +99,22 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main.Components
         {
             if (hasLineOfSight)
             {
-                float distance = Vector2.Distance(agent.Currenttarget.transform.position, agent.transform.position);
+                float distance = Vector2.Distance(agent.CurrentTarget.transform.position, agent.transform.position);
                 if (distance <= config.attackRange)
                 {
-                    agent.StateMachine.StateChage(typeof(EnemyAttackState));
+                    agent.StateMachine.StateChange(typeof(EnemyAttackState));
                 }
+                else
+                {
+                    agent.StateMachine.StateChange(typeof(EnemyMoveState));   
+                }
+            }
+            else
+            {
+                if(agent.CurrentTarget)
+                    agent.StateMachine.StateChange(typeof(EnemyMoveState));
+                else
+                    agent.StateMachine.StateChange(typeof(EnemyPatrolState));
             }
         }
 
@@ -124,7 +135,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main.Components
 
             if (player)
             {
-                agent.StateMachine.StateChage(typeof(EnemyMoveState));
+                agent.StateMachine.StateChange(typeof(EnemyMoveState));
                 return player.gameObject;
             }
 
@@ -149,7 +160,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main.Components
             // 장애물 확인
             return !IsObstructed(target.position);
         }
-        public bool LineOfSight() { return LineOfSight(agent.Currenttarget.transform); }
+        public bool LineOfSight() { return LineOfSight(agent.CurrentTarget.transform); }
     
         
         /// <summary>
@@ -161,10 +172,10 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main.Components
         
             // 현재 타겟이 있으면 타겟 방향을 기준으로, 없으면 기본 방향 사용
             Vector2 baseDirection;
-            if (agent.Currenttarget)
+            if (agent.CurrentTarget)
             {
                 // 현재 타겟 방향을 기준으로 설정
-                baseDirection = ((Vector2)agent.Currenttarget.transform.position - (Vector2)agent.transform.position).normalized;
+                baseDirection = ((Vector2)agent.CurrentTarget.transform.position - (Vector2)agent.transform.position).normalized;
             }
             else
             {
