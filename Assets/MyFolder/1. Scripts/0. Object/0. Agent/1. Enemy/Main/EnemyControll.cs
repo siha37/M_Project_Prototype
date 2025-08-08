@@ -38,7 +38,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main
         [SerializeField] private bool debugLog = true;
         
         
-        private GameObject currentTarget;
+        [SerializeField] private GameObject currentTarget;
         
         
         public EnemyConfig Config => config;
@@ -64,6 +64,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main
             if(IsServerInitialized) return;
             
             Init();
+            ClientComponentInit();
             stateMachine.enabled = false;
             navagent.enabled = false;
             transform.rotation = Quaternion.identity;
@@ -89,7 +90,11 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main
         
         #region Component
 
-        
+        private void ClientComponentInit()
+        {
+            ComponentAdd(new EnemyCombat());
+            ComponentDisactivate(new EnemyCombat());
+        }
         private void ComponentInit()
         {
             ComponentAdd(new EnemyMovement());
@@ -125,10 +130,17 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main
                 component.OnDisable();
             } 
         }
-        public IEnemyComponent GetEnemyComponent(Type type)
+        public IEnemyComponent GetEnemyActiveComponent(Type type)
         {
             if (EnemyComponents.ContainsKey(type))
                 return EnemyComponents[type];
+            return null;
+        }
+
+        public IEnemyComponent GetEnemyAllComponent(Type type)
+        {
+            if (AllComponents.ContainsKey(type))
+                return AllComponents[type];
             return null;
         }
 

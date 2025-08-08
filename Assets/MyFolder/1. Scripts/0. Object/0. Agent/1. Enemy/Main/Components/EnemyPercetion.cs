@@ -1,10 +1,12 @@
 ﻿using System.Collections.Generic;
 using FishNet.Object;
 using FishNet.Object.Helping;
+using MyFolder._1._Scripts._0._Object._0._Agent._0._Player;
 using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main.Components.Interface;
 using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.States;
 using MyFolder._1._Scripts._3._SingleTone;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main.Components
 {
@@ -14,7 +16,8 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main.Components
         private EnemyControll agent;
         private bool hasLineOfSight;
         private Vector3 lastSeenPosition;
-        
+        private float aiUpdateInterval;
+        private float lastUpdateTime;
         
         public bool HasLineOfSight => hasLineOfSight;
         public Vector3 LastSeenPosition => lastSeenPosition;
@@ -23,6 +26,9 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main.Components
         {
             this.agent = agent;
             config = agent.Config;
+            
+            aiUpdateInterval = agent.Config.aiUpdateInterval;
+            
             agent.SetTarget(FindTarget());
         }
 
@@ -42,6 +48,8 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main.Components
 
         public void Update()
         {
+            UpdatePlayerAliveCheck();
+            
             UpdatePerception();
 
             UpdateAttackRange();
@@ -115,6 +123,22 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main.Components
                     agent.StateMachine.StateChange(typeof(EnemyMoveState));
                 else
                     agent.StateMachine.StateChange(typeof(EnemyPatrolState));
+            }
+        }
+
+        private void UpdatePlayerAliveCheck()
+        {
+            if (Time.time - lastUpdateTime >= lastUpdateTime)
+            {
+                if (agent.CurrentTarget)
+                {
+                    PlayerNetworkSync playersync = agent.CurrentTarget.GetComponent<PlayerNetworkSync>();
+                    if(playersync.IsDead())
+                    {
+                        FindTarget();
+                    }
+                }
+                lastUpdateTime = Time.time;
             }
         }
 

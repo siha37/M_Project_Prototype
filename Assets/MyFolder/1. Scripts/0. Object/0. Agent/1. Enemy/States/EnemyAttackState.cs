@@ -13,8 +13,8 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.States
         public override void Init(EnemyControll controll)
         {
             base.Init(controll);
-            combat = (EnemyCombat)agent.GetEnemyComponent(typeof(EnemyCombat));
-            movement = (EnemyMovement)agent.GetEnemyComponent(typeof(EnemyMovement));
+            combat = (EnemyCombat)agent.GetEnemyActiveComponent(typeof(EnemyCombat));
+            movement = (EnemyMovement)agent.GetEnemyActiveComponent(typeof(EnemyMovement));
             pathUpdateInterval = agent.Config.aiUpdateInterval;
         }
 

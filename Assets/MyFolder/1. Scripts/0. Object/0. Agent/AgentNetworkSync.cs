@@ -130,7 +130,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent
         {
             if (AgentStatus && !syncIsDead.Value)
             {
-                LogManager.Log(LogCategory.Player, $"{gameObject.name} 서버에서 데미지 처리: {damage} (공격자: {attacker?.ClientId})", this);
+                Log($"{gameObject.name} 서버에서 데미지 처리: {damage} (공격자: {attacker?.ClientId})", this);
             
                 AgentStatus.TakeDamage(damage, hitDirection);
                 UpdateDamageSyncVars();
@@ -185,7 +185,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent
         }
     
         // 공통 재장전 상태 처리
-        [ServerRpc]
+        [ServerRpc(RequireOwnership = false)]
         public virtual void RequestSetReloadingState(bool isReloading)
         {
             syncIsReloading.Value = isReloading;
@@ -228,13 +228,13 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent
             float waitTime = 0f;
             const float maxWaitTime = 5f; // 최대 5초 대기
         
-            while (BulletManager.Instance == null && waitTime < maxWaitTime)
+            while (!BulletManager.Instance && waitTime < maxWaitTime)
             {
                 yield return new WaitForSeconds(0.1f);
                 waitTime += 0.1f;
             }
         
-            if (BulletManager.Instance != null)
+            if (BulletManager.Instance)
             {
                 // ✅ 초기화 완료 후 정상 발사 처리
                 LogManager.Log(LogCategory.Projectile, $"{gameObject.name} BulletManager 초기화 완료 - 발사 재시도", this);
@@ -252,7 +252,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent
         protected virtual void OnShootEffect(float angle, Vector3 position)
         {
 #if UNITY_EDITOR
-            LogManager.Log(LogCategory.Player, $"{gameObject.name} 발사 효과 재생: {angle}", this);
+            Log($"{gameObject.name} 발사 효과 재생: {angle}", this);
 #endif
             // ✅ 모든 클라이언트에서 추가 시각/음향 효과 처리
             // 자식 클래스에서 구체적인 효과 구현 (총구 화염, 사운드 등)
@@ -272,7 +272,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent
                 }
             
 #if UNITY_EDITOR
-                LogManager.Log(LogCategory.Player, $"{gameObject.name} 체력 동기화: {oldValue} -> {newValue}", this);
+                Log($"{gameObject.name} 체력 동기화: {oldValue} -> {newValue}", this);
 #endif
             }
         }
@@ -290,25 +290,24 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent
                 }
             
 #if UNITY_EDITOR
-                LogManager.Log(LogCategory.Player, $"{gameObject.name} 탄약 동기화: {oldValue} -> {newValue}", this);
+                Log($"{gameObject.name} 탄약 동기화: {oldValue} -> {newValue}", this);
 #endif
             }
         }
     
         protected virtual void OnIsDeadChanged(bool oldValue, bool newValue, bool asServer)
         {
-            if (AgentStatus != null)
+            if (AgentStatus)
             {
                 AgentStatus.isDead = newValue;
             
                 // ✅ 사망 상태 UI 업데이트 (필요시)
-                if (agentUI != null && newValue)
+                if (agentUI && newValue)
                 {
                     // TODO: 사망 시 UI 변경 로직 (체력바 숨김, 사망 표시 등)
                 }
-            
 #if UNITY_EDITOR
-                LogManager.Log(LogCategory.Player, $"{gameObject.name} 사망 상태 동기화: {oldValue} -> {newValue}", this);
+                Log($"{gameObject.name} 사망 상태 동기화: {oldValue} -> {newValue}", this);
 #endif
             }
         }
@@ -329,7 +328,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent
             }
         
 #if UNITY_EDITOR
-            LogManager.Log(LogCategory.Player, $"{gameObject.name} 재장전 상태 동기화: {oldValue} -> {newValue}", this);
+            Log($"{gameObject.name} 재장전 상태 동기화: {oldValue} -> {newValue}", this);
 #endif
         }
     
@@ -351,11 +350,12 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent
                     // 일반적인 경우: 보간 처리 시작
                     shouldInterpolateRotation = true;
                 }
-            }
+                
         
 #if UNITY_EDITOR
-            LogManager.Log(LogCategory.Player, $"{gameObject.name} 조준 방향 동기화: {oldValue} -> {newValue}", this);
+                Log($"{gameObject.name} 조준 방향 동기화: {oldValue} -> {newValue}", this);
 #endif
+            }
         }
     
         // 공통 이벤트 전송
@@ -363,14 +363,14 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent
         protected virtual void OnDamagedEffect(float damage, Vector2 hitDirection)
         {
             // 데미지 효과, 사운드 등
-            LogManager.Log(LogCategory.Player, $"{gameObject.name} 데미지 효과 재생: {damage}", this);
+            Log($"{gameObject.name} 데미지 효과 재생: {damage}", this);
         }
     
         [ObserversRpc]
         protected virtual void OnDeathEffect()
         {
             // 사망 효과, 파티클 등
-            LogManager.Log(LogCategory.Player, $"{gameObject.name} 사망 효과 재생", this);
+            Log($"{gameObject.name} 사망 효과 재생", this);
         }
     
         // 공통 유틸리티 메서드들
@@ -403,7 +403,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent
         protected virtual void HandleAgentDeath(NetworkConnection killer)
         {
             // 기본 사망 처리 - 상속 클래스에서 필요에 따라 오버라이드
-            LogManager.Log(LogCategory.Player, $"{gameObject.name} 사망 처리 (킬러: {killer?.ClientId})", this);
+            Log($"{gameObject.name} 사망 처리 (킬러: {killer?.ClientId})", this);
         
             // TODO: 킬/데스 통계, 리스폰 로직 등 구현
         }
@@ -414,9 +414,18 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent
             if (Application.isPlaying && syncCurrentHp != null)
             {
 #if UNITY_EDITOR
-                LogManager.Log(LogCategory.Player, $"{gameObject.name} AgentNetworkSync 상태 - HP: {syncCurrentHp.Value}, Dead: {syncIsDead.Value}, Bullets: {syncBulletCurrentCount.Value}, Reloading: {syncIsReloading.Value}", this);
+                Log($"{gameObject.name} AgentNetworkSync 상태 - HP: {syncCurrentHp.Value}, Dead: {syncIsDead.Value}, Bullets: {syncBulletCurrentCount.Value}, Reloading: {syncIsReloading.Value}", this);
 #endif
             }
+        }
+
+        protected virtual void Log(string message,Object obj)
+        {
+            LogManager.Log(LogCategory.Player,message,obj);
+        }
+        protected virtual void LogError(string message,Object obj)
+        {
+            LogManager.LogError(LogCategory.Player,message,obj);
         }
     }
 } 

@@ -69,12 +69,31 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
                 syncIsAttacking.Value = false;
             }
         }
-    
+        protected override void OnIsDeadChanged(bool oldValue, bool newValue, bool asServer)
+        {
+            if (playerStatus)
+            {
+                playerStatus.isDead = newValue;
+            
+                // ✅ 사망 상태 UI 업데이트 (필요시)
+                if (agentUI && newValue)
+                {
+                    if (syncReviveCurrentCount.Value != 0)
+                        playerStatus.OnClientDeathSequence();
+                    else
+                        playerStatus.OnClientDeath();
+                    // TODO: 사망 시 UI 변경 로직 (체력바 숨김, 사망 표시 등)
+                } 
+#if UNITY_EDITOR
+                LogManager.Log(LogCategory.Player, $"{gameObject.name} 사망 상태 동기화: {oldValue} -> {newValue}", this);
+#endif
+            }
+        }
         // 플레이어 전용 부활 처리
-        [ServerRpc]
+        [ServerRpc(RequireOwnership = false)]
         public void RequestRevive()
         {
-            if (playerStatus != null && playerStatus.IsDead)
+            if (playerStatus && playerStatus.IsDead)
             {
                 LogManager.Log(LogCategory.Player, $"{gameObject.name} 서버에서 부활 처리", this);
             
@@ -89,40 +108,6 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
             }
         }
     
-        // 플레이어 전용 부활 시작
-        [ServerRpc]
-        public void RequestStartRevive(NetworkObject targetPlayer)
-        {
-            if (syncIsReviving.Value) return;
-        
-            LogManager.Log(LogCategory.Player, $"{gameObject.name} 서버에서 부활 시작", this);
-            syncIsReviving.Value = true;
-            StartCoroutine(ServerReviveProcess(targetPlayer));
-        }
-    
-        private IEnumerator ServerReviveProcess(NetworkObject targetPlayer)
-        {
-            float elapsedTime = 0f;
-        
-            while (elapsedTime < PlayerStatus.reviveDelay)
-            {
-                elapsedTime += Time.deltaTime;
-                syncReviveProgress.Value = elapsedTime / PlayerStatus.reviveDelay;
-                OnReviveProgress(syncReviveProgress.Value);
-                yield return null;
-            }
-        
-            // 부활 완료
-            PlayerStatus targetStatus = targetPlayer.GetComponent<PlayerStatus>();
-            if (targetStatus != null)
-            {
-                targetStatus.Revive();
-                OnReviveComplete(targetPlayer);
-            }
-        
-            syncIsReviving.Value = false;
-            syncReviveProgress.Value = 0f;
-        }
     
         // 플레이어 전용 이동 동기화
         [ServerRpc]
@@ -179,13 +164,14 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
         [ObserversRpc]
         private void OnReviveComplete(NetworkObject targetPlayer)
         {
-            LogManager.Log(LogCategory.Player, $"{gameObject.name} 부활 완료", this);
+            Log($"{gameObject.name} 부활 완료", this);
         }
     
         [ObserversRpc]
         private void OnRevivedEffect()
         {
-            LogManager.Log(LogCategory.Player, $"{gameObject.name} 부활 효과 재생", this);
+            playerStatus.ClientReviveEffect();
+            Log($"{gameObject.name} 부활 효과 재생", this);
         }
     
         // 플레이어 전용 발사 효과
@@ -256,7 +242,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
     
         protected override void ApplyLookRotation(float angle)
         {
-            if (playerControll != null && playerControll.shotPivot != null)
+            if (playerControll && playerControll.shotPivot)
             {
                 playerControll.shotPivot.rotation = Quaternion.Euler(0, 0, angle);
             }

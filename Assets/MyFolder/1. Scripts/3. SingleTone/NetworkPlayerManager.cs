@@ -123,7 +123,7 @@ namespace MyFolder._1._Scripts._3._SingleTone
         {
             if (IsServer) return; // 서버는 이미 처리했으므로 건너뜀
         
-            if (player != null && !allPlayers.Contains(player))
+            if (player && !allPlayers.Contains(player))
             {
                 allPlayers.Add(player);
                 LogManager.Log(LogCategory.Network, $"NetworkPlayerManager 클라이언트에 플레이어 추가: {player.name}", this);
@@ -163,7 +163,7 @@ namespace MyFolder._1._Scripts._3._SingleTone
             foreach (var player in allPlayers)
             {
                 PlayerNetworkSync playerSync = player.GetComponent<PlayerNetworkSync>();
-                if (playerSync != null && !playerSync.IsDead())
+                if (playerSync && !playerSync.IsDead())
                 {
                     alivePlayers.Add(player);
                 }
@@ -184,6 +184,7 @@ namespace MyFolder._1._Scripts._3._SingleTone
             }
             return deadPlayers;
         }
+
 
         // ✅ 이벤트 시스템
         public System.Action<NetworkObject> OnPlayerAdded;

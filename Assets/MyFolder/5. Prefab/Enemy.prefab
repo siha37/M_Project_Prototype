@@ -17,7 +17,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &5459430593585046386
 RectTransform:
   m_ObjectHideFlags: 0
@@ -404,7 +404,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &3566184112625234774
 RectTransform:
   m_ObjectHideFlags: 0
@@ -855,6 +855,7 @@ MonoBehaviour:
   shotPoint: {fileID: 1769733156254832991}
   debugGizmos: 1
   debugLog: 1
+  currentTarget: {fileID: 0}
 --- !u!114 &5020944520583478027
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -881,6 +882,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b807a6d96adc47eea1afcdde839b3027, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  maxHp: 100
   currentHp: 0
   isDead: 0
   bulletCurrentCount: 0

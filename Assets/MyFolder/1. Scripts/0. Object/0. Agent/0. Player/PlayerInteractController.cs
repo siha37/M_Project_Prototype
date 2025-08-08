@@ -1,83 +1,81 @@
-using UnityEngine;
 using System.Collections;
-using MyFolder._1._Scripts._0._Object._0._Agent._0._Player;
+using Unity.Services.Matchmaker.Models;
+using UnityEngine;
 
-public class PlayerInteractController : MonoBehaviour
+namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
 {
-    [SerializeField] private IntractArea interactArea;
-    private PlayerInputControll playerInput;
-    private GameObject currentInteractableObject;
-    private Coroutine reviveCoroutine;
-    private AgentUI agentUI;
-
-    private void Start()
+    public class PlayerInteractController : MonoBehaviour
     {
-        playerInput = GetComponent<PlayerInputControll>();
-        agentUI = GetComponent<AgentUI>();
+        [SerializeField] private IntractArea interactArea;
+        private PlayerInputControll playerInput;
+        private GameObject currentInteractableObject;
+        private Coroutine reviveCoroutine;
+        private AgentUI agentUI;
 
-        if (interactArea == null)
+        private void Start()
         {
-            LogManager.LogError(LogCategory.Player, $"{gameObject.name} IntractArea 컴포넌트가 없습니다.", this);
-            enabled = false;
-            return;
-        }
+            playerInput = GetComponent<PlayerInputControll>();
+            agentUI = GetComponent<AgentUI>();
 
-        if (playerInput == null)
-        {
-            LogManager.LogError(LogCategory.Player, $"{gameObject.name} PlayerInputControll 컴포넌트가 없습니다.", this);
-            enabled = false;
-            return;
-        }
-
-        if (agentUI == null)
-        {
-            LogManager.LogError(LogCategory.Player, $"{gameObject.name} AgentUI 컴포넌트가 없습니다.", this);
-            enabled = false;
-            return;
-        }
-
-        // 입력 이벤트 연결
-        playerInput.interactStartCallback += OnInteractStart;
-        playerInput.interactPerformedCallback += OnInteractPerformed;
-        playerInput.interactCanceledCallback += OnInteractCanceled;
-    }
-
-    private void OnDestroy()
-    {
-        // 이벤트 연결 해제
-        if (playerInput != null)
-        {
-            playerInput.interactStartCallback -= OnInteractStart;
-            playerInput.interactPerformedCallback -= OnInteractPerformed;
-            playerInput.interactCanceledCallback -= OnInteractCanceled;
-        }
-    }
-
-    private void OnInteractStart()
-    {
-        // 가장 가까운 상호작용 가능한 오브젝트 찾기
-        currentInteractableObject = interactArea.GetNearestObject();
-        
-        if (currentInteractableObject != null)
-        {
-            if (currentInteractableObject.CompareTag("Object"))
+            if (interactArea == null)
             {
-                // Object와 상호작용
-                IInteractable interactable = currentInteractableObject.GetComponent<IInteractable>();
-                if (interactable != null)
-                {
-                    interactable.Interact(gameObject);
-                }
+                LogManager.LogError(LogCategory.Player, $"{gameObject.name} IntractArea 컴포넌트가 없습니다.", this);
+                enabled = false;
+                return;
             }
-            else if (currentInteractableObject.CompareTag("Player"))
+
+            if (playerInput == null)
             {
-                // Player의 상태 확인
-                PlayerStatus playerStatus = currentInteractableObject.GetComponent<PlayerStatus>();
-                if (playerStatus != null && playerStatus.IsDead)
+                LogManager.LogError(LogCategory.Player, $"{gameObject.name} PlayerInputControll 컴포넌트가 없습니다.", this);
+                enabled = false;
+                return;
+            }
+
+            if (agentUI == null)
+            {
+                LogManager.LogError(LogCategory.Player, $"{gameObject.name} AgentUI 컴포넌트가 없습니다.", this);
+                enabled = false;
+                return;
+            }
+
+            // 입력 이벤트 연결
+            playerInput.interactStartCallback += OnInteractStart;
+            playerInput.interactPerformedCallback += OnInteractPerformed;
+            playerInput.interactCanceledCallback += OnInteractCanceled;
+        }
+
+        private void OnDestroy()
+        {
+            // 이벤트 연결 해제
+            if (playerInput != null)
+            {
+                playerInput.interactStartCallback -= OnInteractStart;
+                playerInput.interactPerformedCallback -= OnInteractPerformed;
+                playerInput.interactCanceledCallback -= OnInteractCanceled;
+            }
+        }
+
+        private void OnInteractStart()
+        {
+            // 가장 가까운 상호작용 가능한 오브젝트 찾기
+            currentInteractableObject = interactArea.GetNearestObject();
+        
+            if (currentInteractableObject != null)
+            {
+                if (currentInteractableObject.CompareTag("Object"))
                 {
-                    // 네트워크 동기화된 부활 처리
-                    PlayerNetworkSync targetNetworkSync = currentInteractableObject.GetComponent<PlayerNetworkSync>();
-                    if (targetNetworkSync != null)
+                    // Object와 상호작용
+                    IInteractable interactable = currentInteractableObject.GetComponent<IInteractable>();
+                    if (interactable != null)
+                    {
+                        interactable.Interact(gameObject);
+                    }
+                }
+                else if (currentInteractableObject.CompareTag("Player"))
+                {
+                    // Player의 상태 확인
+                    PlayerNetworkSync playerSync = currentInteractableObject.GetComponent<PlayerNetworkSync>();
+                    if (playerSync && playerSync.IsDead())
                     {
                         // 이전 부활 코루틴이 있다면 중지
                         if (reviveCoroutine != null)
@@ -85,74 +83,47 @@ public class PlayerInteractController : MonoBehaviour
                             StopCoroutine(reviveCoroutine);
                         }
                         // 새로운 부활 처리 시작
-                        reviveCoroutine = StartCoroutine(RevivePlayerNetwork(targetNetworkSync));
-                    }
-                    else
-                    {
-                        // 폴백: 기존 방식
-                        if (reviveCoroutine != null)
-                        {
-                            StopCoroutine(reviveCoroutine);
-                        }
-                        reviveCoroutine = StartCoroutine(RevivePlayer(playerStatus));
+                        reviveCoroutine = StartCoroutine(RevivePlayerNetwork(playerSync));
                     }
                 }
             }
         }
-    }
 
-    private IEnumerator RevivePlayer(PlayerStatus playerStatus)
-    {
-        float elapsedTime = 0f;
-        agentUI.StartReviveUI();
-
-        while (elapsedTime < PlayerStatus.reviveDelay)
-        {
-            elapsedTime += Time.deltaTime;
-            float progress = elapsedTime / PlayerStatus.reviveDelay;
-            agentUI.UpdateReviveProgress(progress);
-            yield return null;
-        }
-
-        // 부활 처리
-        playerStatus.Revive();
-        agentUI.EndReviveUI();
-        reviveCoroutine = null;
-    }
     
-    private IEnumerator RevivePlayerNetwork(PlayerNetworkSync targetNetworkSync)
-    {
-        float elapsedTime = 0f;
-        agentUI.StartReviveUI();
-
-        while (elapsedTime < PlayerStatus.reviveDelay)
+        private IEnumerator RevivePlayerNetwork(PlayerNetworkSync targetNetworkSync)
         {
-            elapsedTime += Time.deltaTime;
-            float progress = elapsedTime / PlayerStatus.reviveDelay;
-            agentUI.UpdateReviveProgress(progress);
-            yield return null;
-        }
+            float elapsedTime = 0f;
+            agentUI.StartReviveUI();
 
-        // 네트워크 동기화된 부활 처리
-        targetNetworkSync.RequestRevive();
-        agentUI.EndReviveUI();
-        reviveCoroutine = null;
-    }
+            while (elapsedTime < PlayerStatus.reviveDelay)
+            {
+                elapsedTime += Time.deltaTime;
+                float progress = elapsedTime / PlayerStatus.reviveDelay;
+                agentUI.UpdateReviveProgress(progress);
+                yield return null;
+            }
 
-    private void OnInteractPerformed()
-    {
-        // 상호작용 수행 중 처리
-    }
-
-    private void OnInteractCanceled()
-    {
-        // 상호작용 취소 시 처리
-        if (reviveCoroutine != null)
-        {
-            StopCoroutine(reviveCoroutine);
-            reviveCoroutine = null;
+            // 네트워크 동기화된 부활 처리
+            targetNetworkSync.RequestRevive();
             agentUI.EndReviveUI();
+            reviveCoroutine = null;
         }
-        currentInteractableObject = null;
+
+        private void OnInteractPerformed()
+        {
+            // 상호작용 수행 중 처리
+        }
+
+        private void OnInteractCanceled()
+        {
+            // 상호작용 취소 시 처리
+            if (reviveCoroutine != null)
+            {
+                StopCoroutine(reviveCoroutine);
+                reviveCoroutine = null;
+                agentUI.EndReviveUI();
+            }
+            currentInteractableObject = null;
+        }
     }
 }

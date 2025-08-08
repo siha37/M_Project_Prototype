@@ -182,7 +182,6 @@ GameObject:
   - component: {fileID: 5869935300169224175}
   - component: {fileID: 3505672387467433980}
   - component: {fileID: 7563089925395084894}
-  - component: {fileID: -101737973074151377}
   - component: {fileID: 6657940407241722385}
   m_Layer: 6
   m_Name: Player_01
@@ -305,7 +304,7 @@ MonoBehaviour:
   - {fileID: 1225732615906059595}
   - {fileID: 2641898887914180647}
   - {fileID: 5869935300169224175}
-  - {fileID: -101737973074151377}
+  - {fileID: 0}
   - {fileID: 6657940407241722385}
   InitializedParentNetworkBehaviour: {fileID: 0}
   InitializedNestedNetworkObjects: []
@@ -502,21 +501,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   interactArea: {fileID: 3043969581841878289}
---- !u!114 &-101737973074151377
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2923438329492420310}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8a6a39c46bf52104ba8efe3100bce3f7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _componentIndexCache: 3
-  _addedNetworkObject: {fileID: -3747450574471003315}
-  _networkObjectCache: {fileID: -3747450574471003315}
 --- !u!114 &6657940407241722385
 MonoBehaviour:
   m_ObjectHideFlags: 0

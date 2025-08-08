@@ -5,7 +5,7 @@ namespace MyFolder._1._Scripts._0._Object
 {
     public class Status : MonoBehaviour
     {
-        public const float maxHp = 100f;
+        public float maxHp = 100f;
         public float currentHp;
         public bool isDead = false;
 

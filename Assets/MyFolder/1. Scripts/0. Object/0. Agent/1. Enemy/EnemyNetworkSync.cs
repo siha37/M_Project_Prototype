@@ -1,8 +1,12 @@
 using System;
 using System.Collections;
 using FishNet.Object;
+using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main;
+using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main.Components;
+using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Status;
 using UnityEngine;
 using MyFolder._1._Scripts._0._Object._2._Projectile;
+using Object = UnityEngine.Object;
 
 namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy
 {
@@ -14,14 +18,27 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy
     public class EnemyNetworkSync : AgentNetworkSync
     {
         public Action ReloadCompleteEvent;
+        private EnemyControll controll;
+        private EnemyStatus status;
 
+        public override void OnStartServer()
+        {
+            base.OnStartServer();
+            TryGetComponent(out controll);
+            TryGetComponent(out status);
+        }
+
+        public void RequestUpdateLookAngleForEnemy(float angle)
+        {
+            syncLookAngle.Value = angle;
+        }
+        
         // AI 전용 재장전 처리
-        [ServerRpc]
         public void RequestReload()
         {
             if (syncIsReloading.Value) return;
         
-            LogManager.Log(LogCategory.Player, $"{gameObject.name} 서버에서 재장전 시작", this);
+            Log($"{gameObject.name} 서버에서 재장전 시작", this);
             RequestSetReloadingState(true);
             StartCoroutine(ServerReloadProcess());
         }
@@ -48,13 +65,13 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy
         [ObserversRpc]
         private void OnReloadProgress(float progress)
         {
-            LogManager.Log(LogCategory.Player, $"{gameObject.name} 재장전 진행률: {progress * 100:F1}%", this);
+            Log($"{gameObject.name} 재장전 진행률: {progress * 100:F1}%", this);
         }
     
         [ObserversRpc]
         private void OnReloadComplete()
         {
-            LogManager.Log(LogCategory.Player, $"{gameObject.name} 재장전 완료", this);
+            Log($"{gameObject.name} 재장전 완료", this);
         }
 
         // 적 전용 발사 처리
@@ -85,16 +102,34 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy
             float waitTime = 0f;
             const float maxWaitTime = 5f;
 
-            while (BulletManager.Instance == null && waitTime < maxWaitTime)
+            while (!BulletManager.Instance && waitTime < maxWaitTime)
             {
                 yield return new WaitForSeconds(0.1f);
                 waitTime += 0.1f;
             }
 
-            if (BulletManager.Instance != null)
+            if (BulletManager.Instance)
                 ShootEnemyBullet(angle, shotPosition);
             else
                 LogManager.LogError(LogCategory.Projectile, $"{gameObject.name} BulletManager 초기화 타임아웃! 발사 취소", this);
+        }
+        
+        protected override void ApplyLookRotation(float angle)
+        {
+            if (!controll)
+                TryGetComponent(out controll);
+            EnemyCombat combat = (EnemyCombat)controll.GetEnemyAllComponent(typeof(EnemyCombat));
+            if (combat != null)
+                combat.ShotObjectAngleUpdate(angle);
+
+        }
+        protected override void Log(string message,Object obj)
+        {
+            LogManager.Log(LogCategory.Enemy,message,obj);
+        }
+        protected override void LogError(string message,Object obj)
+        {
+            LogManager.LogError(LogCategory.Enemy,message,obj);
         }
     }
 }

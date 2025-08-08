@@ -53,7 +53,12 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
             // ✅ 기본 데미지 처리만 수행 (UI 업데이트 제거)
             currentHp -= damage;
             currentHp = Mathf.Clamp(currentHp, 0, maxHp);
-        
+            OnDeathSequence();
+
+        }
+
+        public void OnDeathSequence()
+        {
             if (currentHp <= 0)
             {
                 currentHp = 0;
@@ -68,7 +73,11 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
                 }
             }
         }
-        
+
+        public void OnClientDeathSequence()
+        {
+            StartCoroutine(DeathSequence());   
+        }
         /// <summary>
         /// 기절 상태 - 플레이어 전용
         /// </summary>
@@ -128,6 +137,14 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
             }
         }
 
+        public void ClientReviveEffect()
+        {
+            // 스프라이트 색상 복구
+            if (spriteRenderer)
+            {
+                spriteRenderer.color = originalColor;
+            }
+        }
         /// <summary>
         /// 확정적 죽음 호출
         /// </summary>
@@ -143,6 +160,11 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
                 playerInputControll.enabled = false;
             }
             base.OnDeath();
+        }
+
+        public void OnClientDeath()
+        {
+            
         }
     }
 }

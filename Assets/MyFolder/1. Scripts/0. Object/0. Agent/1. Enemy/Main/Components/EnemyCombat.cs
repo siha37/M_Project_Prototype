@@ -74,8 +74,13 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main.Components
             float aimPrecision = agent.Config.aimPrecision;
             float aimError = Random.Range(-aimPrecision * 90f, aimPrecision * 90f);
             finalAngle = shotAngle + aimError;
-            agent.ShotPivot.rotation = Quaternion.Euler(0,0,shotAngle);
-            agent.NetworkSync?.RequestUpdateLookAngle(shotAngle);
+            ShotObjectAngleUpdate(shotAngle);
+            agent.NetworkSync?.RequestUpdateLookAngleForEnemy(shotAngle);
+        }
+
+        public void ShotObjectAngleUpdate(float angle)
+        {
+            agent.ShotPivot.rotation = Quaternion.Euler(0,0,angle);
         }
 
         private void FireUpdate()
