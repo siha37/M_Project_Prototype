@@ -5,6 +5,7 @@ using FishNet;
 using FishNet.Managing;
 using FishNet.Transporting;
 using FishNet.Transporting.Tugboat;
+using MyFolder._1._Scripts._3._SingleTone;
 using UnityEngine.Serialization;
 
 public class FishNetConnector : MonoBehaviour

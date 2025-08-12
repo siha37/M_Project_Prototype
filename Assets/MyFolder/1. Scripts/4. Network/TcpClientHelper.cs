@@ -6,7 +6,8 @@ using System.IO;
 using System.IO.Compression;
 using Newtonsoft.Json;
 using UnityEngine;
-using System.Collections.Generic; // Added for Dictionary
+using System.Collections.Generic;
+using MyFolder._1._Scripts._3._SingleTone; // Added for Dictionary
 
 public static class TcpClientHelper
 {

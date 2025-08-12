@@ -1,5 +1,6 @@
 ﻿using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main;
 using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main.Components;
+using MyFolder._1._Scripts._3._SingleTone;
 using UnityEngine;
 
 namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.States

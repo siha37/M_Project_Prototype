@@ -2,6 +2,7 @@ using System.Collections;
 using FishNet.Connection;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
+using MyFolder._1._Scripts._3._SingleTone;
 using UnityEngine;
 
 namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
@@ -143,7 +144,8 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
             {
                 reloadTimer += Time.deltaTime;
                 float progress = reloadTimer / AgentStatus.bulletReloadTime;
-                OnReloadProgress(progress);
+                OnReloadProgress_Local(progress);
+                OnReloadProgress_Observer(progress);
                 yield return null;
             }
         
@@ -180,11 +182,17 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
             // ✅ 플레이어 전용 시각/음향 효과
             // TODO: 실제 시각 효과 구현 (파티클, 사운드, 총구 화염 등
         }
-    
-        [ObserversRpc]
-        private void OnReloadProgress(float progress)
+
+        private void OnReloadProgress_Local(float progress)
         {
-            LogManager.Log(LogCategory.Player, $"{gameObject.name} 재장전 진행률: {progress * 100:F1}%", this);
+            if(agentUI)
+                agentUI.UpdateReloadProgress(progress);   
+        }
+        [ObserversRpc]
+        private void OnReloadProgress_Observer(float progress)
+        {
+            if(agentUI)
+                agentUI.UpdateReloadProgress(progress);
         }
     
         [ObserversRpc]
@@ -196,7 +204,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
         // SyncVar 변경 시 호출되는 메서드들
         private void OnReviveCountChanged(int oldValue, int newValue, bool asServer)
         {
-            if (playerStatus != null)
+            if (playerStatus)
             {
                 playerStatus.reviveCurrentCount = newValue;
 #if UNITY_EDITOR
@@ -258,6 +266,15 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
 #if UNITY_EDITOR
                 LogManager.Log(LogCategory.Player, $"{gameObject.name} 플레이어 조준 방향 보간 시작: {oldValue} -> {newValue}", this);
 #endif
+            }
+        }
+
+        protected override void OnIsReloadingChanged(bool oldValue, bool newValue, bool asServer)
+        {
+            base.OnIsReloadingChanged(oldValue, newValue, asServer);
+            if (playerControll)
+            {
+                playerControll.SetReloadingstate(newValue);
             }
         }
     

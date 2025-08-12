@@ -4,6 +4,7 @@ using FishNet.Connection;
 using FishNet.Object;
 using MyFolder._1._Scripts._0._Object._0._Agent;
 using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main;
+using MyFolder._1._Scripts._3._SingleTone;
 using UnityEngine;
 
 namespace MyFolder._1._Scripts._0._Object._2._Projectile
@@ -338,7 +339,7 @@ namespace MyFolder._1._Scripts._0._Object._2._Projectile
         
             // ✅ 공격자 NetworkConnection 복원
             NetworkConnection attacker = null;
-            if (bullet.ownerNetworkId > 0)
+            if (bullet.ownerNetworkId != 111)
             {
                 // FishNet 공식 방식: ServerManager를 통한 안전한 Connection 조회
                 InstanceFinder.ServerManager.Clients.TryGetValue((int)bullet.ownerNetworkId, out attacker);
@@ -619,6 +620,8 @@ namespace MyFolder._1._Scripts._0._Object._2._Projectile
         
             // ✅ 발사자 타입 자동 감지
             this.ownerType = DetermineOwnerType(shooter);
+            
+            this.ownerGameObject = shooter?.FirstObject.gameObject;
         }
     
 // ServerBullet 클래스에 적군 초기화 메서드 추가
@@ -633,7 +636,7 @@ namespace MyFolder._1._Scripts._0._Object._2._Projectile
             this.elapsed = 0f;
         
             // ✅ 적군은 NetworkConnection 대신 GameObject 참조 저장
-            this.ownerNetworkId = 0; // 적군은 NetworkConnection이 없으므로 0
+            this.ownerNetworkId = 111; // 적군은 NetworkConnection이 없으므로 111
             this.ownerType = BulletOwnerType.Enemy;
         
             // ✅ GameObject 참조를 위한 추가 필드 필요
@@ -650,7 +653,7 @@ namespace MyFolder._1._Scripts._0._Object._2._Projectile
             // 이 경우 GameObject를 직접 확인해야 함
             GameObject shooterObj = null;
         
-            if (shooter.FirstObject != null)
+            if (shooter.FirstObject)
             {
                 shooterObj = shooter.FirstObject.gameObject;
             }
@@ -703,7 +706,7 @@ namespace MyFolder._1._Scripts._0._Object._2._Projectile
             {
                 // ✅ Owner와의 충돌 무시
                 GameObject ownerObject = GetOwnerGameObject();
-                if (ownerObject != null && hit.gameObject == ownerObject)
+                if (ownerObject && hit.gameObject == ownerObject)
                     return;
                 
                 // ✅ 태그별 처리
@@ -730,6 +733,8 @@ namespace MyFolder._1._Scripts._0._Object._2._Projectile
             {
                 // 플레이어 총알은 적군과 플레이어 모두에게 데미지 (팀킬 가능)
                 bool shouldHit = target.CompareTag("Player") || target.CompareTag("Enemy");
+                if (target == ownerGameObject)
+                    shouldHit = false;
                 if (shouldHit)
                 {
                     LogManager.Log(LogCategory.Projectile, 

@@ -8,15 +8,25 @@ using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using UnityEngine;
 
-namespace MyFolder._1._Scripts._5._Manager
+namespace MyFolder._1._Scripts._3._SingleTone
 {
+    [Serializable]
+    public class PlayerRoleSettings
+    {
+        public PlayerRoleType RoleType = PlayerRoleType.Destoryer;
+        public int RoleAmount = 1;
+    }
     [System.Serializable]
     public class GameSettings
     {
         public int maxPlayers = 8;
         public bool friendlyFire = false;
         public float roundTime = 300f; // 5분
+        public List<PlayerRoleSettings> playerRoleSettings = new(new PlayerRoleSettings[1]);
     }
+    /// <summary>
+    /// 
+    /// </summary>
     public class GameSettingManager : NetworkBehaviour
     {
         // ✅ 싱글톤 인스턴스

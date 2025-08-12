@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 using FishNet;
-using MyFolder._1._Scripts._5._Manager;
+using MyFolder._1._Scripts._3._SingleTone;
 using TMPro;
 using UnityEngine.UI;
 
@@ -62,7 +62,7 @@ public class ReadyHostUI : MonoBehaviour
     {
         if (gameManager)
         {
-            var settings = gameManager.GetCurrentSettings();
+            GameSettings settings = gameManager.GetCurrentSettings();
         }
     }
 

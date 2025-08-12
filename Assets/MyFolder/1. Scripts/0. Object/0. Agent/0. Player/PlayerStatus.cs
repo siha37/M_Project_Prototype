@@ -1,4 +1,5 @@
 using System.Collections;
+using MyFolder._1._Scripts._3._SingleTone;
 using UnityEngine;
 
 namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
@@ -12,6 +13,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
 
         private PlayerControll playerControll;
         private PlayerInputControll playerInputControll;
+        private PlayerNetworkSync playerNetworkSync;
         private SpriteRenderer spriteRenderer;
         private Color originalColor;
 
@@ -21,6 +23,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
             reviveCurrentCount = reviveCount;
             playerControll = GetComponent<PlayerControll>();
             playerInputControll = GetComponent<PlayerInputControll>();
+            playerNetworkSync = GetComponent<PlayerNetworkSync>();
             spriteRenderer = transform.GetChild(0).GetComponent<SpriteRenderer>();
             if (spriteRenderer != null)
             {
@@ -62,9 +65,9 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
             if (currentHp <= 0)
             {
                 currentHp = 0;
-                if (reviveCurrentCount > 0)
+                if (reviveCurrentCount >= 0)
                 {
-                    StartCoroutine(DeathSequence());
+                    OnClientDeathSequence();
                 }
                 else
                 {
@@ -91,13 +94,10 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
             {
                 playerControll.enabled = false;
             }
-
-            // 플레이어 입력 컨트롤 비활성화
-            if (playerInputControll)
-            {
+            
+            if(playerInputControll)
                 playerInputControll.enabled = false;
-            }
-
+            
             // 스프라이트 색상 변경
             if (spriteRenderer)
             {
@@ -116,6 +116,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
 
             isDead = false;
             currentHp = maxHp;
+            
             reviveCurrentCount--;
 
             // 플레이어 컨트롤 활성화
@@ -123,13 +124,8 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
             {
                 playerControll.enabled = true;
             }
-
-            // 플레이어 입력 컨트롤 활성화
-            if (playerInputControll)
-            {
+            if(playerInputControll)
                 playerInputControll.enabled = true;
-            }
-
             // 스프라이트 색상 복구
             if (spriteRenderer)
             {

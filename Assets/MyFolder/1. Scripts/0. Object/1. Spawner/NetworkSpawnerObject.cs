@@ -2,6 +2,7 @@ using System.Collections;
 using FishNet;
 using FishNet.Managing;
 using FishNet.Object;
+using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main;
 using MyFolder._1._Scripts._3._SingleTone;
 using UnityEngine;
 
@@ -168,7 +169,10 @@ namespace MyFolder._1._Scripts._0._Object._1._Spawner
                 Destroy(enemy);
                 return;
             }
-
+            
+            
+            enemy.TryGetComponent(out EnemyControll controller);
+            controller.SetNetworkSpawnerObject(this);
             NetworkManager networkManager = InstanceFinder.NetworkManager;
             // ✅ InstanceFinder를 통한 올바른 네트워크 스폰
             Log($"NetworkManager 체크: {networkManager}, ServerManager 체크: {networkManager?.ServerManager}");

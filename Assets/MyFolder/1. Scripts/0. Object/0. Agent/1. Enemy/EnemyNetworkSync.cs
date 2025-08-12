@@ -6,6 +6,7 @@ using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main.Components;
 using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Status;
 using UnityEngine;
 using MyFolder._1._Scripts._0._Object._2._Projectile;
+using MyFolder._1._Scripts._3._SingleTone;
 using Object = UnityEngine.Object;
 
 namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy
@@ -122,6 +123,20 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy
             if (combat != null)
                 combat.ShotObjectAngleUpdate(angle);
 
+        }
+        protected override void OnIsDeadChanged(bool oldValue, bool newValue, bool asServer)
+        {
+            if (AgentStatus && asServer)
+            {
+                AgentStatus.isDead = newValue;
+                if (newValue)
+                {
+                    if(controll)
+                    {
+                        controll.OnDeath();
+                    }   
+                }   
+            }
         }
         protected override void Log(string message,Object obj)
         {

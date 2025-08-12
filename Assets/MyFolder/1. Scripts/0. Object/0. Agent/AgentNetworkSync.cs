@@ -3,6 +3,8 @@ using FishNet.Connection;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using MyFolder._1._Scripts._0._Object._2._Projectile;
+using MyFolder._1._Scripts._1._UI._0._Agent;
+using MyFolder._1._Scripts._3._SingleTone;
 using UnityEngine;
 
 namespace MyFolder._1._Scripts._0._Object._0._Agent
@@ -138,6 +140,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent
                 // 모든 클라이언트에 데미지 효과 전송
                 OnDamagedEffect(damage, hitDirection);
             
+                // 별도 콜백 - 암것도 없음 지금은
                 OnAgentDamaged?.Invoke(damage, hitDirection, attacker);
             
                 // 사망 시 이벤트 호출
@@ -148,13 +151,6 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent
                     OnAgentDeath?.Invoke(attacker);
                 }
             }
-        }
-    
-        // ✅ 기존 버전과의 호환성을 위한 오버로드
-        [ServerRpc]
-        public virtual void RequestTakeDamage(float damage, Vector2 hitDirection)
-        {
-            RequestTakeDamage(damage, hitDirection, null);
         }
     
         protected virtual void UpdateDamageSyncVars()

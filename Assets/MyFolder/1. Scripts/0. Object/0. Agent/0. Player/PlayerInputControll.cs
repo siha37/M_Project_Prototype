@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections;
@@ -55,22 +56,7 @@ public class PlayerInputControll : NetworkBehaviour
                 default:
                     break;
             }
-            inputActionAsset = playerinput.actions;
-            move = playerinput.currentActionMap.FindAction("Move");
-            look = playerinput.currentActionMap.FindAction("Look");
-            attack = playerinput.currentActionMap.FindAction("Attack");
-            interact = playerinput.currentActionMap.FindAction("Interact");
-            reload = playerinput.currentActionMap.FindAction("Reload");
-
-            move.performed += MovePerformed;
-            move.canceled += MoveCancle;
-            look.performed += LookPerformed;
-            attack.started += AttackStart;
-            attack.canceled += AttackCancel;
-            interact.started += InteractStart;
-            interact.performed += InteractPerformed;
-            interact.canceled += InteractCanceled;
-            reload.started += ReloadStart;
+            RegisterInputActions();
         }
             
             
@@ -78,15 +64,12 @@ public class PlayerInputControll : NetworkBehaviour
 
     private void OnEnable()
     {
-        if(playerinput != null)
-        {
-            playerinput.enabled = true;
-        }
+        RegisterInputActions();
     }
 
     private void OnDisable()
     {
-        playerinput.enabled = false;
+        UnregisterInputActions();
     }
 
     private bool isAttacking = false;
@@ -144,44 +127,86 @@ public class PlayerInputControll : NetworkBehaviour
     }
 
     public override void OnStopClient()
-{
-    UnregisterInputActions();
-}
+    {
+        UnregisterInputActions();
+    }
 
-private void OnDestroy()
-{
-    UnregisterInputActions();
-}
+    private void OnDestroy()
+    {
+        UnregisterInputActions();
+    }
 
-private void UnregisterInputActions()
-{
-    if (move != null)
+    private void RegisterInputActions()
     {
-        move.performed -= MovePerformed;
-        move.canceled -= MoveCancle;
+        if (!playerinput || !playerinput.enabled)
+            return;
+        inputActionAsset = playerinput.actions;
+        move = playerinput.currentActionMap.FindAction("Move");
+        look = playerinput.currentActionMap.FindAction("Look");
+        attack = playerinput.currentActionMap.FindAction("Attack");
+        interact = playerinput.currentActionMap.FindAction("Interact");
+        reload = playerinput.currentActionMap.FindAction("Reload");
+            
+        if (move != null)
+        {
+            move.performed += MovePerformed;
+            move.canceled += MoveCancle;
+        }
+        
+        if (look != null)
+        {
+            look.performed += LookPerformed;
+        }
+        
+        if (attack != null)
+        {
+            attack.started += AttackStart;
+            attack.canceled += AttackCancel;
+        }
+        
+        if (interact != null)
+        {
+            interact.started += InteractStart;
+            interact.performed += InteractPerformed;
+            interact.canceled += InteractCanceled;
+        }
+        
+        if (reload != null)
+        {
+            reload.started += ReloadStart;
+        }
     }
-    
-    if (look != null)
+    private void UnregisterInputActions()
     {
-        look.performed -= LookPerformed;
+        if (!playerinput || !playerinput.enabled)
+            return;
+        if (move != null)
+        {
+            move.performed -= MovePerformed;
+            move.canceled -= MoveCancle;
+        }
+        
+        if (look != null)
+        {
+            look.performed -= LookPerformed;
+        }
+        
+        if (attack != null)
+        {
+            attack.started -= AttackStart;
+            attack.canceled -= AttackCancel;
+        }
+        
+        if (interact != null)
+        {
+            interact.started -= InteractStart;
+            interact.performed -= InteractPerformed;
+            interact.canceled -= InteractCanceled;
+        }
+        
+        if (reload != null)
+        {
+            reload.started -= ReloadStart;
+        }
     }
-    
-    if (attack != null)
-    {
-        attack.started -= AttackStart;
-        attack.canceled -= AttackCancel;
-    }
-    
-    if (interact != null)
-    {
-        interact.started -= InteractStart;
-        interact.performed -= InteractPerformed;
-        interact.canceled -= InteractCanceled;
-    }
-    
-    if (reload != null)
-    {
-        reload.started -= ReloadStart;
-    }
-}
 }

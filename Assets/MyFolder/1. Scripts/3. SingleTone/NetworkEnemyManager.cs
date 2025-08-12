@@ -1,6 +1,7 @@
 using UnityEngine;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
+using MyFolder._1._Scripts._3._SingleTone;
 
 public class NetworkEnemyManager : NetworkBehaviour
 {

@@ -5,6 +5,8 @@ using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main.Components;
 using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main.Components.Interface;
 using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.States;
 using MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Status;
+using MyFolder._1._Scripts._0._Object._1._Spawner;
+using MyFolder._1._Scripts._3._SingleTone;
 using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
@@ -19,6 +21,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main
         private EnemyStatus status;
         private EnemyNetworkSync networkSync;
         private NavMeshAgent navagent;
+        private NetworkSpawnerObject networkSpawnerObject;
 
         [Header("===Config Setting===")]
         [SerializeField] private EnemyConfig config;
@@ -86,6 +89,11 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main
         private void EventSub()
         {
             stateMachine.StateChangeCallback += StateChage;
+        }
+
+        public void SetNetworkSpawnerObject(NetworkSpawnerObject networkSpawnerObject)
+        {
+            this.networkSpawnerObject = networkSpawnerObject;
         }
         
         #region Component
@@ -173,7 +181,16 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main
         {
             currentTarget = target;
         }
-        
+
+        public void OnDeath()
+        {
+            NetworkObject nobj = GetComponent<NetworkObject>();
+            if (nobj)
+            {
+                networkSpawnerObject?.OnEnemyDestroyed();
+                nobj.Despawn();
+            }
+        }
         /*==================Private ========================*/
         private void Update()
         {
@@ -198,7 +215,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main
                 updateComponent.LateUpdate();
             }
         }
-
+        
 
         private void Log(string message,Object context = null)
         {
@@ -211,7 +228,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main
             if(debugLog)
                 LogManager.LogError(LogCategory.Enemy,message,context);
         }
-
+        
 
         private void OnDrawGizmos()
         {

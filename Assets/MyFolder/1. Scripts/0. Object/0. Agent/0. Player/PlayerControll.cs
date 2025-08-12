@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using FishNet.Object;
+using MyFolder._1._Scripts._3._SingleTone;
 using UnityEngine;
 
 namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
@@ -106,7 +108,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
     
         void MoveStop()
         {
-            if(rd2D == null || !rd2D) return;
+            if(!rd2D || !rd2D) return;
             rd2D.linearVelocity = Vector2.zero;
         }
 
@@ -197,11 +199,12 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
                 {
                     networkSync.RequestReload();
                 }
-                else
-                {
-                    LogManager.LogError(LogCategory.Player, $"{gameObject.name} PlayerNetworkSync 컴포넌트를 찾을 수 없습니다!", this);
-                }
             }
+        }
+
+        public void SetReloadingstate(bool isReloading)
+        {
+            this.isReloading = isReloading;
         }
         // 콜백 해제를 위한 메서드 추가
         public override void OnStopClient()
@@ -214,6 +217,11 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
                 playerInputControll.attackCallback -= AttackTrigger;
                 playerInputControll.reloadCallback -= ReloadTrigger;
             }
+        }
+
+        private void OnDisable()
+        {
+            MoveStop();
         }
 
         private void OnDestroy()

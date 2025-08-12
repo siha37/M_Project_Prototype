@@ -88,8 +88,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 783a6def8fc5e4d80af0b3066d73111b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Color1: {r: 0.8352941, g: 0.2974293, b: 0.16862741, a: 1}
-  Color2: {r: 1, g: 0.69146764, b: 0, a: 1}
+  Color1: {r: 0.56891155, g: 0.8352941, b: 0.16862741, a: 1}
+  Color2: {r: 0, g: 1, b: 0.5594096, a: 1}
   Angle: -90
 --- !u!1001 &3650986520000623757
 PrefabInstance:
@@ -110,6 +110,30 @@ PrefabInstance:
     - target: {fileID: 8390933571335814381, guid: 1c2ed6180034e412a8fc07a4c24fcbf0, type: 3}
       propertyPath: m_FillMethod
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8542606535114547848, guid: 1c2ed6180034e412a8fc07a4c24fcbf0, type: 3}
+      propertyPath: Color1.b
+      value: 0.16862741
+      objectReference: {fileID: 0}
+    - target: {fileID: 8542606535114547848, guid: 1c2ed6180034e412a8fc07a4c24fcbf0, type: 3}
+      propertyPath: Color1.g
+      value: 0.43066728
+      objectReference: {fileID: 0}
+    - target: {fileID: 8542606535114547848, guid: 1c2ed6180034e412a8fc07a4c24fcbf0, type: 3}
+      propertyPath: Color1.r
+      value: 0.8352941
+      objectReference: {fileID: 0}
+    - target: {fileID: 8542606535114547848, guid: 1c2ed6180034e412a8fc07a4c24fcbf0, type: 3}
+      propertyPath: Color2.b
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8542606535114547848, guid: 1c2ed6180034e412a8fc07a4c24fcbf0, type: 3}
+      propertyPath: Color2.g
+      value: 0.082383454
+      objectReference: {fileID: 0}
+    - target: {fileID: 8542606535114547848, guid: 1c2ed6180034e412a8fc07a4c24fcbf0, type: 3}
+      propertyPath: Color2.r
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8686151972675383664, guid: 1c2ed6180034e412a8fc07a4c24fcbf0, type: 3}
       propertyPath: m_Pivot.x
