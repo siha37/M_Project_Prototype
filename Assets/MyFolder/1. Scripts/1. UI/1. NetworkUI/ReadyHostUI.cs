@@ -14,8 +14,6 @@ public class ReadyHostUI : MonoBehaviour
 
     [Header("Setting")] 
     [SerializeField] private GameSettings currentSettings;
-    
-    [SerializeField] private GameSettingManager gameManager; 
     void Start()
     {
         if (!IsHost())
@@ -24,7 +22,7 @@ public class ReadyHostUI : MonoBehaviour
             return;
         }
 
-        FindGameManager();
+        Invoke("FindGameManager",0.5f);
         InitialzeUI();
     }
     
@@ -37,11 +35,10 @@ public class ReadyHostUI : MonoBehaviour
 
     void FindGameManager()
     {
-        if (gameManager != null)
+        if(GameSettingManager.Instance)
         {
-            var settings = gameManager.GetCurrentSettings();
-            gameManager.OnSettingsChanged += UpdateUIFromSettings;
-            gameManager.OnPlayerCountChanged += UpdatePlayerCount;
+            GameSettingManager.Instance.OnSettingsChanged += UpdateUIFromSettings;
+            GameSettingManager.Instance.OnPlayerCountChanged += UpdatePlayerCount;
         }
     }
     
@@ -53,16 +50,16 @@ public class ReadyHostUI : MonoBehaviour
     
     private void OnStartGameClicked()
     {
-        if (gameManager)
-            gameManager.RequestStartGame();
+        if (GameSettingManager.Instance)
+            GameSettingManager.Instance.RequestStartGame();
     }
 
     
     private void UpdateUIFromSettings()
     {
-        if (gameManager)
+        if (GameSettingManager.Instance)
         {
-            GameSettings settings = gameManager.GetCurrentSettings();
+            GameSettings settings = GameSettingManager.Instance.GetCurrentSettings();
         }
     }
 
@@ -75,10 +72,10 @@ public class ReadyHostUI : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (gameManager)
+        if (GameSettingManager.Instance)
         {
-            gameManager.OnSettingsChanged -= UpdateUIFromSettings;
-            gameManager.OnPlayerCountChanged -= UpdatePlayerCount;
+            GameSettingManager.Instance.OnSettingsChanged -= UpdateUIFromSettings;
+            GameSettingManager.Instance.OnPlayerCountChanged -= UpdatePlayerCount;
         }
     }
 }

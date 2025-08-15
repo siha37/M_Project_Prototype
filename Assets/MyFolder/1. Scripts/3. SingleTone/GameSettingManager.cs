@@ -6,6 +6,7 @@ using FishNet.Connection;
 using FishNet.Managing.Scened;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
+using MyFolder._1._Scripts._7._PlayerRole;
 using UnityEngine;
 
 namespace MyFolder._1._Scripts._3._SingleTone
@@ -13,7 +14,7 @@ namespace MyFolder._1._Scripts._3._SingleTone
     [Serializable]
     public class PlayerRoleSettings
     {
-        public PlayerRoleType RoleType = PlayerRoleType.Destoryer;
+        public PlayerRoleType RoleType = PlayerRoleType.Destroyer;
         public int RoleAmount = 1;
     }
     [System.Serializable]
@@ -51,7 +52,7 @@ namespace MyFolder._1._Scripts._3._SingleTone
         private void Awake()
         {
             // ✅ 싱글톤 패턴 구현 (DontDestroyOnLoad 제거)
-            if (Instance == null)
+            if (!Instance)
             {
                 Instance = this;
                 LogManager.Log(LogCategory.System, "GameSettingManager 싱글톤 인스턴스 생성", this);
@@ -66,7 +67,7 @@ namespace MyFolder._1._Scripts._3._SingleTone
         public override void OnStartServer()
         {
             // ✅ 인스턴스가 설정되어 있는지 확인 (DontDestroyOnLoad 제거)
-            if (Instance == null)
+            if (!Instance)
             {
                 Instance = this;
             }
@@ -109,7 +110,7 @@ namespace MyFolder._1._Scripts._3._SingleTone
             LogManager.Log(LogCategory.System, $"GameSettingManager 씬 로딩 완료: {string.Join(", ", args.LoadedScenes)}", this);
             
             // 씬 전환 후에도 인스턴스 유지 확인
-            if (Instance == null)
+            if (!Instance)
             {
                 Instance = this;
                 LogManager.Log(LogCategory.System, "GameSettingManager 씬 전환 후 인스턴스 복구됨", this);
@@ -141,13 +142,14 @@ namespace MyFolder._1._Scripts._3._SingleTone
         {
             if (syncPlayerCount.Value < 2)
             {
-                LogManager.LogWarning(LogCategory.System, "최소 4명의 플레이어가 필요합니다", this);
+                LogManager.LogWarning(LogCategory.System, "최소 2명의 플레이어가 필요합니다", this);
                 return;
             }
             
-            NotifyGameStartClientRpc();
+            // 로딩 씬으로 전환
+            LoadLoadingScene();
             
-            LogManager.Log(LogCategory.System, "게임시작", this);
+            LogManager.Log(LogCategory.System, "게임 시작 - 로딩 씬으로 전환", this);
         }
         
         // ✅ 게임 종료 요청 메서드 추가
@@ -169,15 +171,6 @@ namespace MyFolder._1._Scripts._3._SingleTone
         {
             LogManager.Log(LogCategory.System, "GameSettingManager 게임 종료 알림", this);
             OnGameEnded?.Invoke();
-        }
-
-        [ObserversRpc]
-        private void NotifyGameStartClientRpc()
-        {
-            OnGameStarted?.Invoke();
-            
-            if(IsHostInitialized)
-                LoadMainStageScene();
         }
 
         void OnPlayerConnectionChanged(NetworkConnection conn, FishNet.Transporting.RemoteConnectionStateArgs args)
@@ -327,15 +320,20 @@ namespace MyFolder._1._Scripts._3._SingleTone
             OnGameEnded?.Invoke();
         }
 
-        void LoadMainStageScene()
+        /// <summary>
+        /// 로딩 씬으로 전환
+        /// </summary>
+        private void LoadLoadingScene()
         {
-            if (NetworkManager?.SceneManager != null)
+            if (NetworkManager?.SceneManager)
             {
-                SceneLoadData data = new SceneLoadData(new List<string> {"MainScene" })
+                SceneLoadData data = new SceneLoadData(new List<string> {"LoadingStageScene"})
                 {
-                    ReplaceScenes =ReplaceOption.All
+                    ReplaceScenes = ReplaceOption.All
                 };
                 InstanceFinder.SceneManager.LoadGlobalScenes(data);
+                
+                LogManager.Log(LogCategory.System, "로딩 씬으로 전환 시작", this);
             }
         }
         

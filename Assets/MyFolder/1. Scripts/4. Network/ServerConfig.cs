@@ -5,7 +5,7 @@ public static class ServerConfig
     // 서버 설정
     #if UNITY_EDITOR
         public const string SERVER_IP = "127.0.0.1";
-        public const int SERVER_PORT = 9000;
+        public const int SERVER_PORT = 9122;
     #else
         public const string SERVER_IP = "Rosika.iptime.org"; // 배포 시 실제 서버 IP로 변경
         public const int SERVER_PORT = 8080;

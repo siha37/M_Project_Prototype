@@ -1,5 +1,8 @@
-    public enum PlayerRoleType
+    namespace MyFolder._1._Scripts._7._PlayerRole
     {
-        Normal,
-        Destoryer
+        public enum PlayerRoleType
+        {
+            Normal,
+            Destroyer
+        }
     }

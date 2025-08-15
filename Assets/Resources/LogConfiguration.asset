@@ -14,12 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LogConfiguration
   enableAllLogs: 1
   enableNetworkLogs: 0
-  enablePlayerLogs: 1
+  enablePlayerLogs: 0
   enableEnemyLogs: 0
   enableSpawnerLogs: 0
   enableProjectileLogs: 0
   enableUILogs: 0
-  enableSystemLogs: 0
+  enableSystemLogs: 1
   enableCameraLogs: 0
   showInfoLogs: 1
   showWarningLogs: 1
