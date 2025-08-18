@@ -5,7 +5,7 @@ namespace MyFolder._1._Scripts._7._PlayerRole
     [CreateAssetMenu(fileName = "RoleDefinition", menuName = "Game/Role Definition")]
     public class RoleDefinition : ScriptableObject
     {
-        public PlayerRoleType Role;
+        public PlayerRoleType Role = PlayerRoleType.Normal;
 
         // 스탯
         public float MoveSpeed = 5f;
@@ -22,5 +22,15 @@ namespace MyFolder._1._Scripts._7._PlayerRole
         public bool CanReviveAlly = true;
         public bool CanUseSkill1 = false;
         public bool CanUseSkill2 = false;
+
+
+        //임시
+        public void DestroySetting()
+        {
+            Role = PlayerRoleType.Destroyer;
+
+            CanUseSkill1 = true;
+            CanUseSkill2 = true;
+        }
     }
 }

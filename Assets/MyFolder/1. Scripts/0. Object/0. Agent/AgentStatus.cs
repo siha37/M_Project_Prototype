@@ -48,5 +48,16 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent
             bulletCurrentCount += count;
             bulletCurrentCount = Mathf.Clamp(bulletCurrentCount, 0, bulletMaxCount);
         }
+
+        public void SetDefinition(RoleDefinition definition)
+        {
+            speed = definition.MoveSpeed;
+            bulletSpeed = definition.bulletSpeed;
+            bulletDamage = definition.bulletDamage;
+            bulletDelay = definition.bulletDelay;
+            bulletRange = definition.bulletRange;
+            bulletReloadTime = definition.BulletReloadTime;
+            bulletMaxCount = definition.BulletMaxCount;
+        }
     }
 }
