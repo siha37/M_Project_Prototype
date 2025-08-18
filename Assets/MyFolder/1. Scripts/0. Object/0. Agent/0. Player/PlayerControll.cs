@@ -9,6 +9,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
     public class PlayerControll : NetworkBehaviour
     {
         PlayerInputControll playerInputControll;
+        PlayerComponentManager ComponentManager;
         PlayerStatus status;
         Transform tf;
         Rigidbody2D rd2D;
@@ -45,6 +46,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
 
             if(!IsOwner){
                 playerInputControll.enabled = false;
+                ComponentManager.enabled = false;
                 // ✅ AgentUI는 NetworkSync에서 관리하므로 여기서 제어하지 않음
             }
             else
