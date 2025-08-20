@@ -171,6 +171,19 @@ namespace MyFolder._1._Scripts._3._SingleTone
             return alivePlayers;
         }
 
+        public List<NetworkObject> GetTargetAblePlayers()
+        {
+            List<NetworkObject> targetAblePlayers = new List<NetworkObject>();
+            foreach (NetworkObject player in allPlayers)
+            {
+                PlayerNetworkSync playerSync = player.GetComponent<PlayerNetworkSync>();
+                if (playerSync && !playerSync.IsDead() && playerSync.IsCanSee())
+                {
+                    targetAblePlayers.Add(player);
+                }
+            }
+            return targetAblePlayers;
+        }
         public List<NetworkObject> GetDeadPlayers()
         {
             List<NetworkObject> deadPlayers = new List<NetworkObject>();

@@ -8,6 +8,7 @@ namespace MyFolder._1._Scripts._7._PlayerRole
     public class PlayerRole : NetworkBehaviour
     {
         private PlayerControll controll;
+        private PlayerInputControll inputControll;
         private AgentStatus state;
         private PlayerRoleType type;
         private PlayerRoleDefinition definition;
@@ -16,12 +17,26 @@ namespace MyFolder._1._Scripts._7._PlayerRole
         {
             if(IsOwner)
             {
+                TryGetComponent(out inputControll);
+                TryGetComponent(out state);
                 if(!TryGetComponent(out controll))
                 {
                     LogManager.LogError(LogCategory.System,$"controll이 없습니다 {controll}");
                 }
-                type = PlayerRoleManager.instance.GetLocalPlayerRole();
-                definition = PlayerRoleManager.instance.GetDefinition(type);
+                else
+                {
+                    if (!PlayerRoleManager.Instance)
+                    {
+                        LogManager.LogError(LogCategory.System, $"{gameObject.name} : PlayerRoleManager is Null");
+                    }
+                    else
+                    {
+                        type = PlayerRoleManager.instance.GetLocalPlayerRole();
+                        definition = PlayerRoleManager.instance.GetDefinition(type);
+                        SetState();
+                        SetSkill();   
+                    }
+                }
             }
         }
 
@@ -31,7 +46,7 @@ namespace MyFolder._1._Scripts._7._PlayerRole
         }
         private void SetSkill()
         {
-            
+            inputControll.IsActive_skill_1 = definition.CanUseSkill1;
         }
     }
 }

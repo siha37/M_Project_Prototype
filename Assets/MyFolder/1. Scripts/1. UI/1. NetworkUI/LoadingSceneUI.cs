@@ -51,7 +51,8 @@ namespace MyFolder._1._Scripts._1._UI._1._NetworkUI
             }
             
             // 로딩 애니메이션 시작
-            loadingAnimation.SetActive(true);
+            if(loadingAnimation)
+                loadingAnimation.SetActive(true);
             
             // 초기 UI 설정
             UpdateProgressDisplay(0f);

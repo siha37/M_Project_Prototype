@@ -39,6 +39,8 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
         public InputActionCallBack skill_1StartCallback;
         public InputActionCallBack skill_1StopCallback;
 
+        public bool IsActive_skill_1 = false;
+
         public override void OnStartClient()
         {
             playerinput = GetComponent<PlayerInput>();
@@ -131,6 +133,8 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
 
         private void Skill1Start(InputAction.CallbackContext context)
         {
+            if(!IsActive_skill_1)
+                return;
             skill_1StartCallback?.Invoke();
         }
 
@@ -226,6 +230,12 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
             if (reload != null)
             {
                 reload.started -= ReloadStart;
+            }
+            
+            if (skill_1 != null)
+            {
+                skill_1.started -= Skill1Start;
+                skill_1.canceled -= Skill1Stop;
             }
         }
     }

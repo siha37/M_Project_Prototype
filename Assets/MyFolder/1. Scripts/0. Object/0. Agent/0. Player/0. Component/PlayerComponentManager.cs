@@ -1,15 +1,13 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
-using VFolders.Libs;
 
 namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player._0._Component
 {
     public class PlayerComponentManager : MonoBehaviour
     {
         private PlayerInputControll playerInputControll;
-        private SpriteRenderer spriteRenderer;
+        private PlayerControll playerControll;
         
         private Dictionary<Type,IPlayerComponent> components;
         private Dictionary<Type,PlayerUpdateComponent> update_components;
@@ -22,6 +20,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player._0._Component
         private void Init()
         {
             TryGetComponent(out playerInputControll);
+            TryGetComponent(out playerControll);
         }
         private void ComponentInit()
         {
@@ -39,7 +38,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player._0._Component
             IPlayerComponent component = new T();
             components.Add(typeof(T),component);
             //컴포넌트 초기화
-            component.Start();
+            component.Start(playerControll);
             //키 이벤트 등록
             component.SetKeyEvent(playerInputControll);
             
@@ -59,15 +58,24 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player._0._Component
         
         private void Update()
         {
-            update_components.ForEach(com=>com.Value.Update());
+            foreach (var component in update_components)
+            {
+                component.Value.Update();
+            }
         }
         private void FixedUpdate()
         {
-            update_components.ForEach(com=>com.Value.FixedUpdate());
+            foreach (var component in update_components)
+            {
+                component.Value.FixedUpdate();
+            }
         }
         private void LateUpdate()
         {
-            update_components.ForEach(com=>com.Value.FixedUpdate());
+            foreach (var component in update_components)
+            {
+                component.Value.LateUpdate();
+            }
         }
     }
 }

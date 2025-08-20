@@ -128,14 +128,14 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main.Components
 
         private void UpdatePlayerAliveCheck()
         {
-            if (Time.time - lastUpdateTime >= lastUpdateTime)
+            if (Time.time - lastUpdateTime >= aiUpdateInterval)
             {
                 if (agent.CurrentTarget)
                 {
                     PlayerNetworkSync playersync = agent.CurrentTarget.GetComponent<PlayerNetworkSync>();
-                    if(playersync.IsDead())
+                    if(playersync.IsDead() || !playersync.IsCanSee())
                     {
-                        FindTarget();
+                        agent.SetTarget(FindTarget());
                     }
                 }
                 lastUpdateTime = Time.time;
@@ -144,7 +144,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._1._Enemy.Main.Components
 
         private GameObject FindTarget()
         {
-            List<NetworkObject> players = NetworkPlayerManager.Instance.GetAlivePlayers();
+            List<NetworkObject> players = NetworkPlayerManager.Instance.GetTargetAblePlayers();
             float distance = float.MaxValue;
             NetworkObject player = null;
             players.ForEach(e =>

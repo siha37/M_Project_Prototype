@@ -107,6 +107,8 @@ GameObject:
   - component: {fileID: 7563089925395084894}
   - component: {fileID: 6657940407241722385}
   - component: {fileID: 8169743718015903537}
+  - component: {fileID: 5034207477420047239}
+  - component: {fileID: 2736836752263630111}
   m_Layer: 6
   m_Name: Player_01
   m_TagString: Player
@@ -354,6 +356,7 @@ MonoBehaviour:
   _addedNetworkObject: {fileID: -3747450574471003315}
   _networkObjectCache: {fileID: -3747450574471003315}
   controllerType: 0
+  IsActive_skill_1: 0
 --- !u!114 &8159540077785804002
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -369,6 +372,13 @@ MonoBehaviour:
   maxHp: 100
   currentHp: 0
   isDead: 0
+  speed: 5
+  bulletSpeed: 10
+  bulletDamage: 45
+  bulletDelay: 0.3
+  bulletRange: 10
+  bulletReloadTime: 2
+  bulletMaxCount: 10
   bulletCurrentCount: 0
   reviveCurrentCount: 0
 --- !u!114 &5869935300169224175
@@ -386,6 +396,7 @@ MonoBehaviour:
   _componentIndexCache: 2
   _addedNetworkObject: {fileID: -3747450574471003315}
   _networkObjectCache: {fileID: -3747450574471003315}
+  spriteRenderer: {fileID: 6539953411448909880}
   gamepadDeadzone: 0.15
   lookSensitivity: 1
   lookSmoothing: 10
@@ -444,6 +455,33 @@ MonoBehaviour:
   reloadBar: {fileID: 1361180251675404096}
   reviveBar: {fileID: 6677457191325486667}
   ammoText: {fileID: 0}
+--- !u!114 &5034207477420047239
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2923438329492420310}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c40272682b95c7c41aef79ce00ba65a2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &2736836752263630111
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2923438329492420310}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3214df1a0ba84ede88c5a46f9cbc656e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _componentIndexCache: 255
+  _addedNetworkObject: {fileID: -3747450574471003315}
+  _networkObjectCache: {fileID: 0}
 --- !u!1 &4855864271696374617
 GameObject:
   m_ObjectHideFlags: 0

@@ -12,6 +12,8 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
         PlayerInputControll playerInputControll;
         PlayerComponentManager ComponentManager;
         PlayerStatus status;
+        [SerializeField] SpriteRenderer spriteRenderer;
+        
         Transform tf;
         Rigidbody2D rd2D;
         // ✅ AgentUI 참조 제거 (NetworkSync에서 처리)
@@ -44,6 +46,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
             networkSync = GetComponent<PlayerNetworkSync>();
             tf = transform;
             rd2D = GetComponent<Rigidbody2D>();
+            ComponentManager = GetComponent<PlayerComponentManager>();
 
             if(!IsOwner){
                 playerInputControll.enabled = false;
@@ -238,6 +241,32 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
                 playerInputControll.attackCallback -= AttackTrigger;
                 playerInputControll.reloadCallback -= ReloadTrigger;
             }
+        }
+
+        public Color GetColor()
+        {
+            if (spriteRenderer)
+            {
+                return spriteRenderer.color;
+            }
+            return Color.white;
+        }
+        
+        [ServerRpc]
+        public void ColorChange(Color color)
+        { 
+            if(spriteRenderer)
+            { 
+                spriteRenderer.color = color;
+                ClientColorChange(color);
+            }
+        }
+
+        [ObserversRpc]
+        private void ClientColorChange(Color color)
+        {
+            if(spriteRenderer)
+                spriteRenderer.color = color;
         }
     }
 }

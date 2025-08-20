@@ -14,6 +14,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent
         // 공통 상태 동기화
         protected readonly SyncVar<float> syncCurrentHp = new SyncVar<float>();
         protected readonly SyncVar<bool> syncIsDead = new SyncVar<bool>();
+        protected readonly SyncVar<bool> syncIsCanSee = new SyncVar<bool>();
         protected readonly SyncVar<float> syncBulletCurrentCount = new SyncVar<float>();
         protected readonly SyncVar<bool> syncIsReloading = new SyncVar<bool>();
         protected readonly SyncVar<float> syncLookAngle = new SyncVar<float>();
@@ -121,6 +122,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent
                 syncCurrentHp.Value = AgentStatus.maxHp;
                 syncBulletCurrentCount.Value = AgentStatus.bulletMaxCount;
                 syncIsDead.Value = false;
+                syncIsCanSee.Value = true;
                 syncIsReloading.Value = false;
                 syncLookAngle.Value = 0f;
             
@@ -379,7 +381,17 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent
         {
             return syncIsDead.Value;
         }
-    
+
+        public bool IsCanSee()
+        {
+            return syncIsCanSee.Value;
+        }
+
+        [ServerRpc]
+        public void SetCanSee(bool canSee)
+        {
+            syncIsCanSee.Value = canSee;
+        }
         public float GetBulletCount()
         {
             return syncBulletCurrentCount.Value;

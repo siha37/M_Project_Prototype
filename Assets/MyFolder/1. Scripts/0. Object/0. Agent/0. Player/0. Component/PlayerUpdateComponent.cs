@@ -1,3 +1,5 @@
+using FishNet.Example.Scened;
+
 namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player._0._Component
 {
     public class PlayerUpdateComponent : IPlayerComponent
@@ -16,7 +18,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player._0._Component
         {
         }
 
-        public virtual void Start()
+        public virtual void Start(PlayerControll controll)
         {
         }
 

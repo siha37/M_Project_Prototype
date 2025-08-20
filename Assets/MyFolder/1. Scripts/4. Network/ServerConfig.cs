@@ -7,8 +7,8 @@ public static class ServerConfig
         public const string SERVER_IP = "127.0.0.1";
         public const int SERVER_PORT = 9122;
     #else
-        public const string SERVER_IP = "Rosika.iptime.org"; // 배포 시 실제 서버 IP로 변경
-        public const int SERVER_PORT = 8080;
+        public const string SERVER_IP = "39.120.49.222"; // 배포 시 실제 서버 IP로 변경
+        public const int SERVER_PORT = 9222;
     #endif
     
     public const int FISHNET_PORT = 7777;       // FishNet 게임 포트
