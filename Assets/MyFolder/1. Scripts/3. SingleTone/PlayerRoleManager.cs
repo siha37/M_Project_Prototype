@@ -25,7 +25,7 @@ namespace MyFolder._1._Scripts._3._SingleTone
         
         
 
-        [SerializeField] private List<RoleDefinition> roleDefinitions;
+        [SerializeField] private List<PlayerRoleDefinition> roleDefinitions;
 
         private readonly Dictionary<int, PlayerRoleType> assignedRoles = new(); // key: ClientId
         
@@ -38,7 +38,7 @@ namespace MyFolder._1._Scripts._3._SingleTone
         /// <summary>
         /// 원하는 타입의 Deficition 얻기
         /// </summary>
-        public RoleDefinition GetDefinition(PlayerRoleType type)
+        public PlayerRoleDefinition GetDefinition(PlayerRoleType type)
             => roleDefinitions.FirstOrDefault(r => r.Role == type);
 
         

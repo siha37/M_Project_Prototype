@@ -1,16 +1,17 @@
+using MyFolder._1._Scripts._7._PlayerRole;
 using UnityEngine;
 
 namespace MyFolder._1._Scripts._0._Object._0._Agent
 {
     public class AgentStatus : Status
     {
-        public const float speed = 5f;
-        public const float bulletSpeed = 10f;
-        public const float bulletDamage = 45f;
-        public const float bulletDelay = 0.3f;
-        public const float bulletRange = 10f;
-        public const float bulletReloadTime = 2f;
-        public const float bulletMaxCount = 10f;
+        public float speed = 5f;
+        public float bulletSpeed = 10f;
+        public float bulletDamage = 45f;
+        public float bulletDelay = 0.3f;
+        public float bulletRange = 10f;
+        public float bulletReloadTime = 2f;
+        public float bulletMaxCount = 10f;
 
         public float bulletCurrentCount;
         // ✅ AgentUI 참조 제거 (NetworkSync에서 처리)
@@ -49,13 +50,13 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent
             bulletCurrentCount = Mathf.Clamp(bulletCurrentCount, 0, bulletMaxCount);
         }
 
-        public void SetDefinition(RoleDefinition definition)
+        public void SetDefinition(PlayerRoleDefinition definition)
         {
             speed = definition.MoveSpeed;
-            bulletSpeed = definition.bulletSpeed;
-            bulletDamage = definition.bulletDamage;
-            bulletDelay = definition.bulletDelay;
-            bulletRange = definition.bulletRange;
+            bulletSpeed = definition.BulletSpeed;
+            bulletDamage = definition.BulletDamage;
+            bulletDelay = definition.BulletDelay;
+            bulletRange = definition.BulletRange;
             bulletReloadTime = definition.BulletReloadTime;
             bulletMaxCount = definition.BulletMaxCount;
         }

@@ -3,7 +3,7 @@ using UnityEngine;
 namespace MyFolder._1._Scripts._7._PlayerRole
 {
     [CreateAssetMenu(fileName = "RoleDefinition", menuName = "Game/Role Definition")]
-    public class RoleDefinition : ScriptableObject
+    public class PlayerRoleDefinition : ScriptableObject
     {
         public PlayerRoleType Role = PlayerRoleType.Normal;
 
@@ -11,6 +11,7 @@ namespace MyFolder._1._Scripts._7._PlayerRole
         public float MoveSpeed = 5f;
         public float MaxHp = 100f;
         public float BulletDamage = 45f;
+        public float BulletSpeed = 10f;
         public float BulletDelay = 0.3f;
         public float BulletRange = 10f;
         public float BulletReloadTime = 2f;

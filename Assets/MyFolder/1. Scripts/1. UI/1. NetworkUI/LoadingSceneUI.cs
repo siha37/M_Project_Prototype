@@ -1,9 +1,9 @@
+using MyFolder._1._Scripts._3._SingleTone;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
-using MyFolder._1._Scripts._3._SingleTone;
 
-namespace MyFolder._1._Scripts._1._UI.NetworkUI
+namespace MyFolder._1._Scripts._1._UI._1._NetworkUI
 {
     /// <summary>
     /// 로딩 씬에서 전처리 진행도를 표시하는 UI 클래스

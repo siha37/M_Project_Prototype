@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using FishNet.Object;
+using MyFolder._1._Scripts._0._Object._0._Agent._0._Player._0._Component;
 using MyFolder._1._Scripts._3._SingleTone;
 using UnityEngine;
 
@@ -105,7 +106,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
 
         void Move(Vector2 direction)
         {
-            rd2D.linearVelocity = new Vector2(direction.x, direction.y) * PlayerStatus.speed;
+            rd2D.linearVelocity = new Vector2(direction.x, direction.y) * status.speed;
         }
     
         void MoveStop()
@@ -187,14 +188,14 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
         private IEnumerator ShootDelay()
         {
             canShoot = false;
-            yield return new WaitForSeconds(AgentStatus.bulletDelay);
+            yield return new WaitForSeconds(status.bulletDelay);
             canShoot = true;
         }
 
         // ✅ 로컬 Reload 메서드 제거 - NetworkSync에서 처리
         private void ReloadTrigger()
         {
-            if (!isReloading && status.bulletCurrentCount < AgentStatus.bulletMaxCount)
+            if (!isReloading && status.bulletCurrentCount < status.bulletMaxCount)
             {
                 // ✅ 네트워크 동기화만 사용 (폴백 방식 제거)
                 if (networkSync)
