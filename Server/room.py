@@ -1,7 +1,7 @@
 import time
 
 class RoomInfo:
-    def __init__(self, roomId, hostDeviceId, hostAddress, hostPort, maxPlayers, roomName, gameType, isPrivate):
+    def __init__(self, roomId, hostDeviceId, hostAddress, hostPort, maxPlayers, roomName, gameType, isPrivate, joinCode=None):
         self.roomId = roomId
         self.hostDeviceId = hostDeviceId
         self.hostAddress = hostAddress
@@ -15,6 +15,7 @@ class RoomInfo:
         self.lastHeartbeat = int(time.time())
         self.lastActivity = int(time.time())
         self.isPrivate = isPrivate
+        self.joinCode = joinCode
 
     def to_dict(self):
         return self.__dict__
@@ -41,7 +42,8 @@ class RoomManager:
             maxPlayers=data["maxPlayers"],
             roomName=data["roomName"],
             gameType=data.get("gameType", "mafia"),
-            isPrivate=data.get("isPrivate", False)
+            isPrivate=data.get("isPrivate", False),
+            joinCode=data.get("joinCode")
         )
         self.rooms[roomId] = room
         self.room_players[roomId] = set()

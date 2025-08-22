@@ -14,6 +14,7 @@ namespace MyFolder._1._Scripts._3._SingleTone
         UI,          // 네트워크 UI, 방 리스트
         System,      // 싱글톤, 게임 설정 등
         Camera,      // 카메라 추적 등
+        Quest,       // 퀘스트
         All          // 전체 제어용
     }
 

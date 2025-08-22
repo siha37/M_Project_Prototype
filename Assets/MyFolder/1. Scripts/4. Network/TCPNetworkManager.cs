@@ -109,16 +109,22 @@ namespace MyFolder._1._Scripts._4._Network
         {
             try
             {
+                UpdateConnectionStatus("Relay 할당 중...");
+                var relayResult = await FishNetConnector.Instance.StartHostRelayAsync(maxPlayers);
+                if (!relayResult.ok || string.IsNullOrEmpty(relayResult.joinCode))
+                {
+                    UpdateConnectionStatus("Relay 할당 실패");
+                    return false;
+                }
+
                 UpdateConnectionStatus("방을 생성하는 중...");
-                var success = await roomHost.CreateRoomWithRetryAsync(roomName, maxPlayers);
+                var success = await roomHost.CreateRoomWithRetryAsync(roomName, maxPlayers, 3, relayResult.joinCode);
             
                 if (success)
                 {
                     UpdateConnectionStatus("방 생성 성공");
-                    // FishNet 호스트 서버 시작
-                    UpdateConnectionStatus("FishNet 호스트 서버 시작 중...");
-                    var fishNetSuccess = await FishNetConnector.Instance.StartHostAsync();
-                    if (fishNetSuccess)
+                    // FishNet 호스트 서버는 Relay에서 이미 시작됨
+                    if (true)
                     {
                         UpdateConnectionStatus("FishNet 호스트 서버 시작 성공");
                         OnRoomCreated?.Invoke(roomHost.GetSessionToken());
@@ -190,9 +196,9 @@ namespace MyFolder._1._Scripts._4._Network
                 if (result.success)
                 {
                     UpdateConnectionStatus("방 참가 성공");
-                    // FishNet 클라이언트 연결
-                    UpdateConnectionStatus("FishNet 클라이언트 연결 중...");
-                    var fishNetSuccess = await FishNetConnector.Instance.ConnectAsClientAsync(result.hostAddress, result.hostPort);
+                    // Relay 클라이언트 연결
+                    UpdateConnectionStatus("Relay 클라이언트 연결 중...");
+                    var fishNetSuccess = await FishNetConnector.Instance.ConnectClientRelayAsync(result.joinCode);
                     if (fishNetSuccess)
                     {
                         UpdateConnectionStatus("FishNet 클라이언트 연결 성공");

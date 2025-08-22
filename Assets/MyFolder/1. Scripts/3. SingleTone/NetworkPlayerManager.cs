@@ -15,7 +15,7 @@ namespace MyFolder._1._Scripts._3._SingleTone
         {
             get
             {
-                if (instance == null)
+                if (!instance)
                 {
                     instance = FindObjectOfType<NetworkPlayerManager>();
                 }

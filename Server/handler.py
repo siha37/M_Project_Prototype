@@ -76,7 +76,8 @@ def handle_client(conn, addr):
                     data = {
                         "hostAddress": room.hostAddress,
                         "hostPort": room.hostPort,
-                        "roomInfo": room.to_dict()
+                        "roomInfo": room.to_dict(),
+                        "joinCode": room.joinCode
                     }
                     log_server_event(f"[SOCKET {addr}] [방 참가] roomId={roomId}, by={deviceId}")
                     conn.sendall(make_response(True, data=data).encode())

@@ -141,7 +141,8 @@ public class RoomGuest
                             success = true,
                             hostAddress = joinData.hostAddress,
                             hostPort = joinData.hostPort,
-                            roomInfo = joinData.roomInfo
+                            roomInfo = joinData.roomInfo,
+                            joinCode = joinData.joinCode
                         };
                     }
                     else

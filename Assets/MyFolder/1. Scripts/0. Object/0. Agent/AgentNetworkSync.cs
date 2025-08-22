@@ -3,7 +3,7 @@ using FishNet.Connection;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using MyFolder._1._Scripts._0._Object._2._Projectile;
-using MyFolder._1._Scripts._1._UI._0._Agent;
+using MyFolder._1._Scripts._1._UI._0._GameStage._0._Agent;
 using MyFolder._1._Scripts._3._SingleTone;
 using UnityEngine;
 

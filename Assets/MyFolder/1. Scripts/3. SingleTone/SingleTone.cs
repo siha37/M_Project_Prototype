@@ -1,38 +1,40 @@
-using System;
 using UnityEngine;
 
-public class SingleTone<T> : MonoBehaviour where T : MonoBehaviour
+namespace MyFolder._1._Scripts._3._SingleTone
 {
-    private static T instance;
-    public static T Instance
+    public class SingleTone<T> : MonoBehaviour where T : MonoBehaviour
     {
-        get
+        private static T instance;
+        public static T Instance
+        {
+            get
+            {
+                if (!instance)
+                {
+                    instance = FindFirstObjectByType<T>();
+
+                    if (!instance)
+                    {
+                        GameObject obj = new GameObject();
+                        obj.name = typeof(T).Name;
+                        instance = obj.AddComponent<T>();
+                    }
+                }
+                return instance;
+            }
+        }
+
+        protected virtual void Awake()
         {
             if (!instance)
             {
-                instance = FindFirstObjectByType<T>();
-
-                if (!instance)
-                {
-                    GameObject obj = new GameObject();
-                    obj.name = typeof(T).Name;
-                    instance = obj.AddComponent<T>();
-                }
+                instance = this as T;
+                DontDestroyOnLoad(gameObject);
             }
-            return instance;
-        }
-    }
-
-    protected virtual void Awake()
-    {
-        if (instance == null)
-        {
-            instance = this as T;
-            DontDestroyOnLoad(gameObject);
-        }
-        else
-        {
-            Destroy(gameObject);
+            else
+            {
+                Destroy(gameObject);
+            }
         }
     }
 }

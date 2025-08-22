@@ -1,6 +1,4 @@
-﻿using UnityEngine;
-
-namespace MyFolder._1._Scripts._1._UI._0._Agent
+﻿namespace MyFolder._1._Scripts._1._UI._0._GameStage._0._Agent
 {
     public class PlayerUI : AgentUI
     {

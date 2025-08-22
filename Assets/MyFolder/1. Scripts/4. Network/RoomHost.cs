@@ -11,10 +11,12 @@ public class RoomHost
     private string sessionToken;
     private string roomId;
     
-    public async Task<bool> CreateRoomAsync(string roomName, int maxPlayers = ServerConfig.DEFAULT_MAX_PLAYERS)
+    public async Task<bool> CreateRoomAsync(string roomName, int maxPlayers = ServerConfig.DEFAULT_MAX_PLAYERS, string joinCode = null)
     {
         try
         {
+            // 최소 기능: TCP 서버에는 기존 hostAddress/hostPort를 유지로 전달하되,
+            // Relay joinCode는 별도 API 또는 필드로 확장 필요 시 추가 가능.
             var payload = new
             {
                 type = "create",
@@ -24,7 +26,8 @@ public class RoomHost
                 maxPlayers = maxPlayers,
                 roomName = roomName,
                 gameType = ServerConfig.DEFAULT_GAME_TYPE,
-                isPrivate = false
+                isPrivate = false,
+                joinCode = joinCode
             };
 
             var response = await TcpClientHelper.SendAuthedJsonAsync<ApiResponse>(
@@ -90,12 +93,12 @@ public class RoomHost
         }
     }
     
-    public async Task<bool> CreateRoomWithRetryAsync(string roomName, int maxPlayers = ServerConfig.DEFAULT_MAX_PLAYERS, int maxRetry = 3)
+    public async Task<bool> CreateRoomWithRetryAsync(string roomName, int maxPlayers = ServerConfig.DEFAULT_MAX_PLAYERS, int maxRetry = 3, string joinCode = null)
     {
         int retryCount = 0;
         while (retryCount < maxRetry)
         {
-            bool result = await CreateRoomAsync(roomName, maxPlayers);
+            bool result = await CreateRoomAsync(roomName, maxPlayers, joinCode);
             if (result)
                 return true;
             retryCount++;
