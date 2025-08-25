@@ -1,3 +1,4 @@
+using System;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using UnityEngine;
@@ -15,7 +16,7 @@ namespace MyFolder._1._Scripts._3._SingleTone
         {
             get
             {
-                if (instance == null)
+                if (!instance)
                 {
                     instance = FindObjectOfType<NetworkEnemyManager>();
                 }
@@ -26,6 +27,10 @@ namespace MyFolder._1._Scripts._3._SingleTone
         // 프로퍼티로 SyncVar 값 접근
         public int CurrentEnemyCount => syncCurrentEnemyCount.Value;
         public int MaxEnemyCount => syncMaxEnemyCount.Value;
+
+        public delegate void voiddel();
+
+        public voiddel enemyRemoveCallback;
 
         private void Awake()
         {
@@ -127,7 +132,7 @@ namespace MyFolder._1._Scripts._3._SingleTone
             LogManager.Log(LogCategory.Enemy, $"AddSpawner 호출됨 - IsServer: {IsServer}, IsServerInitialized: {IsServerInitialized}, IsNetworked: {IsNetworked}", this);
         
             // 서버에서만 직접 값 변경
-            if (IsServer && IsServerInitialized)
+            if (IsServerInitialized)
             {
                 LogManager.Log(LogCategory.Enemy, "AddSpawner - 직접 SyncVar 값 변경 시작", this);
             
@@ -146,7 +151,7 @@ namespace MyFolder._1._Scripts._3._SingleTone
         public void RemoveSpawner()
         {
             // 서버에서만 직접 값 변경
-            if (IsServer && IsServerInitialized)
+            if (IsServerInitialized)
             {
                 syncMaxEnemyCount.Value = Mathf.Max(0, syncMaxEnemyCount.Value - 5);
                 LogManager.Log(LogCategory.Enemy, $"NetworkEnemyManager 스포너 제거됨. 최대 적 수량: {syncMaxEnemyCount.Value}", this);
@@ -160,7 +165,7 @@ namespace MyFolder._1._Scripts._3._SingleTone
         public void AddEnemy()
         {
             // 서버에서만 직접 값 변경
-            if (IsServerInitialized && IsServerInitialized)
+            if (IsServerInitialized)
             {
                 syncCurrentEnemyCount.Value++;
                 LogManager.Log(LogCategory.Enemy, $"NetworkEnemyManager 적 생성됨. 현재 적 수량: {syncCurrentEnemyCount.Value}/{syncMaxEnemyCount.Value}", this);
@@ -174,9 +179,10 @@ namespace MyFolder._1._Scripts._3._SingleTone
         public void RemoveEnemy()
         {
             // 서버에서만 직접 값 변경
-            if (IsServerInitialized && IsServerInitialized)
+            if (IsServerInitialized)
             {
                 syncCurrentEnemyCount.Value = Mathf.Max(0, syncCurrentEnemyCount.Value - 1);
+                enemyRemoveCallback?.Invoke();
                 LogManager.Log(LogCategory.Enemy, $"NetworkEnemyManager 적 제거됨. 현재 적 수량: {syncCurrentEnemyCount.Value}/{syncMaxEnemyCount.Value}", this);
             }
             else

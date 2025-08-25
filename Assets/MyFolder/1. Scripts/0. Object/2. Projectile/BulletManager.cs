@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 using FishNet;
 using FishNet.Connection;
 using FishNet.Object;
@@ -363,6 +364,10 @@ namespace MyFolder._1._Scripts._0._Object._2._Projectile
                     LogManager.Log(LogCategory.Projectile, 
                         $"데미지 적용: {bullet.damage} (공격자:{attacker?.ClientId}, 타겟:{target.name})", this);
                 }
+                else
+                {
+                    LogManager.LogError(LogCategory.Projectile,"agentSync 없음");
+                }
             }
         
             // ✅ bulletId 포함하여 충돌 효과 전송
@@ -418,18 +423,32 @@ namespace MyFolder._1._Scripts._0._Object._2._Projectile
     
         private void Update()
         {
-            if (IsServer)
+            if (IsServerInitialized)
             {
                 // 서버에서 모든 활성 총알 업데이트
-                for (int i = activeBullets.Count - 1; i >= 0; i--)
+                int i = 0;
+                float dt = Time.deltaTime;
+                while (i < activeBullets.Count)
                 {
                     ServerBullet bullet = activeBullets[i];
-                    bullet.Update(Time.deltaTime);
-                
+                    bullet.Update(dt);
+
+                    // bullet.Update 중 리스트가 변형될 수 있으므로 안전 체크
+                    if (i >= activeBullets.Count || !ReferenceEquals(activeBullets[i], bullet))
+                    {
+                        // 요소가 제거되었거나 시프트됨. 같은 인덱스를 다시 검사
+                        continue;
+                    }
+
                     // 생명주기 종료 시 반납
                     if (bullet.IsExpired())
                     {
                         ReturnServerBullet(bullet);
+                        // 제거되었으므로 i 증가 없이 동일 인덱스를 다음 요소로 재검사
+                    }
+                    else
+                    {
+                        i++;
                     }
                 }
             }
@@ -556,11 +575,166 @@ namespace MyFolder._1._Scripts._0._Object._2._Projectile
         // ✅ 인스펙터에서 실시간 확인 가능
         [Header("Debug Info (Runtime Only)")]
         [SerializeField] private PoolDebugInfo debugInfo;
+
+        // ✅ 풀 무결성 검사 옵션
+        [Header("Validation (Runtime)")]
+        [SerializeField] private bool enableAutoValidation = false;
+        [SerializeField] private float validationInterval = 5f;
+        [SerializeField] private bool lastValidationOk = true;
+        [SerializeField, TextArea] private string lastValidationReport = string.Empty;
+        private float _nextValidationTime = 0f;
     
         private void LateUpdate()
         {
             // ✅ 매 프레임 디버그 정보 업데이트 (모든 환경에서)
             debugInfo = GetDebugInfo();
+
+            // ✅ 주기적 무결성 검사 (선택)
+            if (enableAutoValidation && Time.unscaledTime >= _nextValidationTime)
+            {
+                lastValidationOk = ValidatePools(out lastValidationReport);
+                if (!lastValidationOk)
+                {
+                    LogManager.LogWarning(LogCategory.Projectile, $"BulletManager 무결성 경고:\n{lastValidationReport}", this);
+                }
+                _nextValidationTime = Time.unscaledTime + validationInterval;
+            }
+        }
+
+        [ContextMenu("Validate Bullet Pools Now")]
+        public void ValidateBulletPoolsNow()
+        {
+            lastValidationOk = ValidatePools(out lastValidationReport);
+            if (lastValidationOk)
+            {
+                LogManager.Log(LogCategory.Projectile, "BulletManager 무결성 검사: OK", this);
+            }
+            else
+            {
+                LogManager.LogWarning(LogCategory.Projectile, $"BulletManager 무결성 검사: 문제 발견\n{lastValidationReport}", this);
+            }
+        }
+
+        private bool ValidatePools(out string report)
+        {
+            bool ok = true;
+            StringBuilder sb = new StringBuilder();
+
+            // 서버 풀 검사
+            HashSet<ServerBullet> serverActiveSet = new HashSet<ServerBullet>();
+            HashSet<uint> activeIds = new HashSet<uint>();
+            for (int i = 0; i < activeBullets.Count; i++)
+            {
+                ServerBullet b = activeBullets[i];
+                if (b == null)
+                {
+                    ok = false; sb.AppendLine("[Server] activeBullets 에 null 항목 존재");
+                    continue;
+                }
+                if (!serverActiveSet.Add(b))
+                {
+                    ok = false; sb.AppendLine("[Server] activeBullets 에 중복 참조 존재");
+                }
+                if (b.bulletId == 0)
+                {
+                    ok = false; sb.AppendLine("[Server] 활성 총알 bulletId 가 0 (반납 상태여야 함)");
+                }
+                if (!activeIds.Add(b.bulletId))
+                {
+                    ok = false; sb.AppendLine($"[Server] 활성 총알 bulletId 중복: {b.bulletId}");
+                }
+            }
+            ServerBullet[] pooledServer = bulletPool.ToArray();
+            for (int i = 0; i < pooledServer.Length; i++)
+            {
+                ServerBullet b = pooledServer[i];
+                if (b == null)
+                {
+                    ok = false; sb.AppendLine("[Server] bulletPool 에 null 항목 존재");
+                    continue;
+                }
+                if (serverActiveSet.Contains(b))
+                {
+                    ok = false; sb.AppendLine("[Server] 동일 총알이 active 와 pool 모두에 존재");
+                }
+                if (b.bulletId != 0)
+                {
+                    ok = false; sb.AppendLine("[Server] 풀에 있는 총알의 bulletId 가 0 아님");
+                }
+            }
+
+            // 시각 풀 검사
+            if (activeVisualBullets.Count != activeVisualBulletsSet.Count)
+            {
+                ok = false; sb.AppendLine($"[Visual] List/Set 크기 불일치: List={activeVisualBullets.Count}, Set={activeVisualBulletsSet.Count}");
+            }
+            for (int i = 0; i < activeVisualBullets.Count; i++)
+            {
+                GameObject go = activeVisualBullets[i];
+                if (go == null)
+                {
+                    ok = false; sb.AppendLine("[Visual] activeVisualBullets 에 null 항목 존재");
+                    continue;
+                }
+                if (!activeVisualBulletsSet.Contains(go))
+                {
+                    ok = false; sb.AppendLine("[Visual] List 항목이 Set 에 존재하지 않음");
+                }
+                if (!go.activeInHierarchy)
+                {
+                    ok = false; sb.AppendLine("[Visual] 활성 목록의 총알이 비활성 상태");
+                }
+                if (visualBulletPool.Contains(go))
+                {
+                    ok = false; sb.AppendLine("[Visual] 동일 오브젝트가 활성과 풀에 동시에 존재");
+                }
+            }
+            GameObject[] pooledVisual = visualBulletPool.ToArray();
+            for (int i = 0; i < pooledVisual.Length; i++)
+            {
+                GameObject go = pooledVisual[i];
+                if (go == null)
+                {
+                    ok = false; sb.AppendLine("[Visual] visualBulletPool 에 null 항목 존재");
+                    continue;
+                }
+                if (activeVisualBulletsSet.Contains(go))
+                {
+                    ok = false; sb.AppendLine("[Visual] 풀의 오브젝트가 활성 Set 에도 존재");
+                }
+                if (go.activeInHierarchy)
+                {
+                    ok = false; sb.AppendLine("[Visual] 풀의 오브젝트가 활성 상태");
+                }
+            }
+
+            // ID/Coroutine 매핑 검사
+            foreach (KeyValuePair<uint, GameObject> kv in visualBulletsById)
+            {
+                if (kv.Value == null)
+                {
+                    ok = false; sb.AppendLine($"[Visual] visualBulletsById[{kv.Key}] 가 null");
+                    continue;
+                }
+                if (!activeVisualBulletsSet.Contains(kv.Value))
+                {
+                    ok = false; sb.AppendLine($"[Visual] ID {kv.Key} 가 활성 Set 에 없음");
+                }
+                if (!bulletCoroutines.ContainsKey(kv.Key))
+                {
+                    ok = false; sb.AppendLine($"[Visual] ID {kv.Key} 의 코루틴 누락");
+                }
+            }
+            foreach (KeyValuePair<uint, Coroutine> kv in bulletCoroutines)
+            {
+                if (!visualBulletsById.ContainsKey(kv.Key))
+                {
+                    ok = false; sb.AppendLine($"[Visual] 코루틴만 존재하고 ID 매핑 없음: {kv.Key}");
+                }
+            }
+
+            report = sb.ToString();
+            return ok;
         }
     }
 
@@ -699,7 +873,7 @@ namespace MyFolder._1._Scripts._0._Object._2._Projectile
         private void CheckCollisions()
         {
             // ✅ 레이어 필터링과 Owner 체크 추가
-            LayerMask targetLayers = LayerMask.GetMask("Player","Enemy", "Wall");
+            LayerMask targetLayers = LayerMask.GetMask("Player","Enemy", "Wall","DestroyAbleObject");
             Collider2D hit = Physics2D.OverlapCircle(position, 0.1f, targetLayers);
         
             if (hit)
@@ -732,7 +906,7 @@ namespace MyFolder._1._Scripts._0._Object._2._Projectile
             if (ownerType == BulletOwnerType.Player)
             {
                 // 플레이어 총알은 적군과 플레이어 모두에게 데미지 (팀킬 가능)
-                bool shouldHit = target.CompareTag("Player") || target.CompareTag("Enemy");
+                bool shouldHit = target.CompareTag("Player") || target.CompareTag("Enemy") || target.CompareTag("DestroyAbleObject");
                 if (target == ownerGameObject)
                     shouldHit = false;
                 if (shouldHit)

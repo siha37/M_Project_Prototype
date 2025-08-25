@@ -2,6 +2,10 @@
 {
     public class SurvivalGlobalSpawner : QuestSpawner
     {
-        
+        protected override int createAmount => 6;
+        public override void SpawnStart()
+        {
+            AllSpawn();
+        }
     }
 }

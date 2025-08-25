@@ -2,6 +2,10 @@
 {
     public class DefenseGlobalSpawner : QuestSpawner
     {
-        
+        protected override int createAmount => 1;
+        public override void SpawnStart()
+        {
+            AllSpawn();
+        }
     }
 }

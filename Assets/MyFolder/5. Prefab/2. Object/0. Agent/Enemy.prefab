@@ -501,11 +501,7 @@ MonoBehaviour:
   NetworkBehaviours:
   - {fileID: 463563239894297547}
   - {fileID: -9098008235120941594}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 950284016042230261}
   InitializedParentNetworkBehaviour: {fileID: 0}
   InitializedNestedNetworkObjects: []
   RuntimeParentNetworkBehaviour: {fileID: 0}
@@ -530,9 +526,9 @@ MonoBehaviour:
   _spectatorInterpolation: 2
   _enableTeleport: 0
   _teleportThreshold: 1
-  <PrefabId>k__BackingField: 10
+  <PrefabId>k__BackingField: 17
   <SpawnableCollectionId>k__BackingField: 0
-  <AssetPathHash>k__BackingField: 15087046121079337338
+  <AssetPathHash>k__BackingField: 17750083311899857082
   <SceneId>k__BackingField: 0
   SerializedTransformProperties:
     Position: {x: 10.83, y: 6.85, z: 0}
@@ -634,9 +630,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c49a6009fef047a4c8d98da5b40209eb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _componentIndexCache: 255
+  _componentIndexCache: 2
   _addedNetworkObject: {fileID: 187507071748887718}
-  _networkObjectCache: {fileID: 0}
+  _networkObjectCache: {fileID: 187507071748887718}
   config: {fileID: 11400000, guid: 78d11a8d073963a4d8a0b40101cbcbea, type: 2}
   shotPivot: {fileID: 7987831769807400613}
   shotPoint: {fileID: 1769733156254832991}
@@ -672,6 +668,13 @@ MonoBehaviour:
   maxHp: 100
   currentHp: 0
   isDead: 0
+  speed: 5
+  bulletSpeed: 10
+  bulletDamage: 45
+  bulletDelay: 0.3
+  bulletRange: 10
+  bulletReloadTime: 2
+  bulletMaxCount: 10
   bulletCurrentCount: 0
 --- !u!1 &8828214184213655894
 GameObject:

@@ -21,6 +21,7 @@ public class LogConfiguration : ScriptableObject
     public bool enableUILogs = true;
     public bool enableSystemLogs = true;
     public bool enableCameraLogs = true;
+    public bool enableQuestLogs = true;
     
     [Header("📊 로그 레벨 설정")]
     public bool showInfoLogs = true;
@@ -109,6 +110,7 @@ public class LogConfiguration : ScriptableObject
         enableUILogs = true;
         enableSystemLogs = true;
         enableCameraLogs = true;
+        enableQuestLogs = true;
         showInfoLogs = true;
         showWarningLogs = true;
         showErrorLogs = true;
@@ -146,6 +148,7 @@ public class LogConfiguration : ScriptableObject
         enableUILogs = true;
         enableSystemLogs = true;
         enableCameraLogs = true;
+        enableQuestLogs = true;
         Debug.Log("✅ 모든 로그를 활성화했습니다.");
         
         if (Application.isPlaying)
@@ -168,6 +171,7 @@ public class LogConfiguration : ScriptableObject
             LogCategory.UI => enableUILogs,
             LogCategory.System => enableSystemLogs,
             LogCategory.Camera => enableCameraLogs,
+            LogCategory.Quest => enableQuestLogs,
             LogCategory.All => enableAllLogs,
             _ => true
         };

@@ -35,7 +35,6 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent
         // 공통 컴포넌트 참조
         protected AgentStatus AgentStatus;
         protected AgentUI agentUI;
-        protected Transform agentTransform;
     
         // 공통 이벤트
         public delegate void OnAgentDamagedHandler(float damage, Vector2 hitDirection, NetworkConnection attacker);
@@ -99,13 +98,13 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent
         {
             AgentStatus = GetComponent<AgentStatus>();
             agentUI = GetComponent<AgentUI>();
-            agentTransform = transform;
             if (AgentStatus == null)
             {
                 LogManager.LogError(LogCategory.Player, $"{gameObject.name} AgentState 컴포넌트를 찾을 수 없습니다.", this);
+                return;
             }
         
-            if (agentUI == null)
+            if (!agentUI)
             {
                 LogManager.LogWarning(LogCategory.Player, $"{gameObject.name} AgentUI 컴포넌트를 찾을 수 없습니다.", this);
             }

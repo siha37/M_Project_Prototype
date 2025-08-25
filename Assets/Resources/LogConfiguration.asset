@@ -17,10 +17,11 @@ MonoBehaviour:
   enablePlayerLogs: 0
   enableEnemyLogs: 0
   enableSpawnerLogs: 0
-  enableProjectileLogs: 0
+  enableProjectileLogs: 1
   enableUILogs: 0
-  enableSystemLogs: 1
+  enableSystemLogs: 0
   enableCameraLogs: 0
+  enableQuestLogs: 0
   showInfoLogs: 1
   showWarningLogs: 1
   showErrorLogs: 1

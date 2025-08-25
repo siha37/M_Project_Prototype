@@ -34,10 +34,8 @@ namespace MyFolder._1._Scripts._3._SingleTone
             if (!GameSettingManager.Instance)
             {
                 var nob = Instantiate(singletonPrefab);
-                LogManager.Log(LogCategory.System,$"{nob.gameObject.activeSelf}");
                 nob.SetIsGlobal(true);
                 InstanceFinder.ServerManager.Spawn(nob);
-                LogManager.Log(LogCategory.System,$"{nob.gameObject.activeSelf}");
                 nob.gameObject.SetActive(true);
             }
             

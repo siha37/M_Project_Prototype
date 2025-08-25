@@ -1,11 +1,12 @@
-using MyFolder._1._Scripts._0._Object._0._Agent;
+﻿using MyFolder._1._Scripts._0._Object._0._Agent;
 using MyFolder._1._Scripts._3._SingleTone;
 using UnityEngine;
 
-namespace MyFolder._1._Scripts._0._Object._1._Spawner
+namespace MyFolder._1._Scripts._0._Object._3._QuestAgent
 {
-    public class SpawnerStatus : AgentStatus
+    public class QuestAgentStatus : AgentStatus
     {
+        
         protected override void Start()
         {
             base.Start();
@@ -19,9 +20,6 @@ namespace MyFolder._1._Scripts._0._Object._1._Spawner
         
             if (currentHp <= 0)
             {
-                // NetworkEnemyManager의 최대 적 수량 감소
-                NetworkEnemyManager.Instance.RemoveSpawner();
-            
                 // 사망 시퀀스 시작
                 StartCoroutine(DeathSequence());
             }
