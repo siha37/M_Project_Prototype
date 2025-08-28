@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 404497bacf82e874289a5f344949743a, type: 3}
+  m_Name: Test
+  m_EditorClassIdentifier: 
+  ActorType: 0
+  HealthConfig: {fileID: 11400000, guid: 661451f423c47784aa79478342c040df, type: 2}
+  MovementConfig: {fileID: 11400000, guid: 74fea72c7909fa24da6e7fdd759c3737, type: 2}
+  ShooterConfig: {fileID: 11400000, guid: e1fd14a73a7437241adf8b68b78a071f, type: 2}
+  AnimationProfile: {fileID: 11400000, guid: f67a0b70f72464a4083b8ad397fca0ac, type: 2}
+  PerceptionConfig: {fileID: 11400000, guid: 6c188b3cdd129a5478200b5e90c9d637, type: 2}
+  Description: 

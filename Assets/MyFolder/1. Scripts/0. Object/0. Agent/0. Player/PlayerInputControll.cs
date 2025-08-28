@@ -69,7 +69,11 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
 
         private void OnEnable()
         {
-            RegisterInputActions();
+            // IsOwner인 경우에만 입력 액션 등록
+            if (IsOwner && playerinput != null && playerinput.enabled)
+            {
+                RegisterInputActions();
+            }
         }
 
         private void OnDisable()
@@ -102,6 +106,7 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
         private void MovePerformed(InputAction.CallbackContext context)
         {
             Vector2 inputVector = context.ReadValue<Vector2>();
+            Debug.Log($"[PlayerInputControll] MovePerformed 호출됨 - Input: {inputVector}, Callback 등록됨: {movePerformedCallback != null}");
             movePerformedCallback?.Invoke(inputVector);
         }
         private void MoveCancle(InputAction.CallbackContext context)
@@ -155,8 +160,13 @@ namespace MyFolder._1._Scripts._0._Object._0._Agent._0._Player
 
         private void RegisterInputActions()
         {
-            if (!playerinput || !playerinput.enabled)
+            if (!playerinput || !playerinput.enabled || !IsOwner)
+            {
+                Debug.LogWarning($"[PlayerInputControll] RegisterInputActions 실패 - PlayerInput: {playerinput != null}, Enabled: {playerinput?.enabled}, IsOwner: {IsOwner}");
                 return;
+            }
+            
+            Debug.Log($"[PlayerInputControll] RegisterInputActions 시작 - {gameObject.name}");
             move = playerinput.currentActionMap.FindAction("Move");
             look = playerinput.currentActionMap.FindAction("Look");
             attack = playerinput.currentActionMap.FindAction("Attack");
