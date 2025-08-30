@@ -331,7 +331,7 @@ MonoBehaviour:
   m_ActionEvents: []
   m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: 
-  m_DefaultActionMap: df70fa95-8a34-4494-b137-73ab6b9c7d37
+  m_DefaultActionMap: PlayerKeyboard
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
 --- !u!114 &-3008156897462920907
@@ -370,6 +370,11 @@ MonoBehaviour:
   actorPreset: {fileID: 11400000, guid: 646a7b380dca53445837a6d7386371af, type: 2}
   buildOnStart: 1
   debugMode: 1
+  useManualComponents: 1
+  manualComponents:
+  - _assemblyQualifiedTypeName: MyFolder._1._Scripts._0._Object._00._Actor._4._Components._3._Shooter.LookAngleComponent,
+      Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    _displayName: LookAngleComponent
   healthOverride: {fileID: 0}
   movementOverride: {fileID: 0}
   shooterOverride: {fileID: 0}

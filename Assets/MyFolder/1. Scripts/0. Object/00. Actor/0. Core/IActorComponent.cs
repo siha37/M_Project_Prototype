@@ -25,19 +25,5 @@ namespace MyFolder._1._Scripts._0._Object._00._Actor._0._Core
         /// </summary>
         void Dispose();
 
-        /// <summary>
-        /// 매 프레임 업데이트
-        /// </summary>
-        void Update();
-
-        /// <summary>
-        /// 물리 업데이트
-        /// </summary>
-        void FixedUpdate();
-
-        /// <summary>
-        /// 후처리 업데이트
-        /// </summary>
-        void LateUpdate();
     }
 }

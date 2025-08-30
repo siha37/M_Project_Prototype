@@ -5,7 +5,7 @@ using MyFolder._1._Scripts._0._Object._00._Actor._3._Network;
 using MyFolder._1._Scripts._00._Actor._4._Components.Health;
 using UnityEngine;
 
-namespace MyFolder._1._Scripts._00._Actor._7._NetworkModules
+namespace MyFolder._1._Scripts._0._Object._00._Actor._7._NetworkModules
 {
     /// <summary>
     /// 체력 동기화 모듈

@@ -1,10 +1,13 @@
+using System.Collections.Generic;
 using FishNet.Object;
 using MyFolder._1._Scripts._0._Object._00._Actor._0._Core;
 using MyFolder._1._Scripts._0._Object._00._Actor._5._Builder;
 using MyFolder._1._Scripts._00._Actor._6._Config;
+using MyFolder._1._Scripts._00._Actor._8._Authoring;
 using UnityEngine;
 
-namespace MyFolder._1._Scripts._00._Actor._8._Authoring
+
+namespace MyFolder._1._Scripts._0._Object._00._Actor._8._Authoring
 {
     /// <summary>
     /// Unity에서 Actor 초기화를 담당하는 Authoring 컴포넌트
@@ -16,6 +19,10 @@ namespace MyFolder._1._Scripts._00._Actor._8._Authoring
         [SerializeField] private ActorPreset actorPreset;
         [SerializeField] private bool buildOnStart = true;
         [SerializeField] private bool debugMode = false;
+
+        [Header("Manual Components")]
+        [SerializeField] private bool useManualComponents = true;
+        [SerializeField] private List<ComponentTypeSelector> manualComponents = new List<ComponentTypeSelector>();
 
         [Header("Runtime Overrides")]
         [SerializeField] private HealthConfig healthOverride;
@@ -78,6 +85,9 @@ namespace MyFolder._1._Scripts._00._Actor._8._Authoring
             
             // 서버 컴포넌트 빌드
             ActorBuilder.BuildServer(_actor, runtimePreset);
+
+            // 수동 컴포넌트 추가
+            BuildManualComponents();
             
             if (debugMode)
             {
@@ -102,6 +112,9 @@ namespace MyFolder._1._Scripts._00._Actor._8._Authoring
             {
                 ActorBuilder.EnableOwnerInput(_actor);
             }
+
+            // 수동 컴포넌트 추가
+            BuildManualComponents();
             
             if (debugMode)
             {
@@ -137,6 +150,9 @@ namespace MyFolder._1._Scripts._00._Actor._8._Authoring
             
             var runtimePreset = CreateRuntimePreset();
             ActorBuilder.BuildComplete(_actor, runtimePreset);
+
+            // 수동 컴포넌트 추가
+            BuildManualComponents();
             
             Debug.Log($"[ActorAuthoring] Manual build complete for {gameObject.name}");
         }
@@ -185,5 +201,36 @@ namespace MyFolder._1._Scripts._00._Actor._8._Authoring
             ActorBuilder.DebugComponents(_actor);
         }
         #endif
+
+        /// <summary>
+        /// 수동으로 선택된 컴포넌트들을 인스턴스화하여 등록합니다.
+        /// </summary>
+        private void BuildManualComponents()
+        {
+            if (!useManualComponents) return;
+            if (manualComponents == null || manualComponents.Count == 0) return;
+
+            foreach (var selector in manualComponents)
+            {
+                if (selector == null) continue;
+                
+                var componentType = selector.GetSelectedType();
+                if (componentType == null) continue;
+
+                var instance = ActorComponentReflection.CreateInstance(componentType);
+                if (instance != null)
+                {
+                    _actor.AddComponent(instance);
+                    if (debugMode)
+                    {
+                        Debug.Log($"[ActorAuthoring] Added manual component: {componentType.Name}");
+                    }
+                }
+                else if (debugMode)
+                {
+                    Debug.LogWarning($"[ActorAuthoring] Failed to create instance of {componentType.Name}");
+                }
+            }
+        }
     }
 }

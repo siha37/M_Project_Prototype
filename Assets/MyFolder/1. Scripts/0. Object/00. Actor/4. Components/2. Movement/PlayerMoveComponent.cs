@@ -2,7 +2,7 @@ using MyFolder._1._Scripts._0._Object._00._Actor._0._Core;
 using MyFolder._1._Scripts._0._Object._00._Actor._1._Interfaces;
 using UnityEngine;
 
-namespace MyFolder._1._Scripts._0._Object._00._Actor._4._Components.Movement
+namespace MyFolder._1._Scripts._0._Object._00._Actor._4._Components._2._Movement
 {
     /// <summary>
     /// 플레이어 이동을 처리하는 컴포넌트 (Rigidbody2D 기반)

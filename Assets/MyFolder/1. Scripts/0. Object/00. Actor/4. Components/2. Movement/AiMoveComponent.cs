@@ -1,6 +1,6 @@
 using MyFolder._1._Scripts._0._Object._00._Actor._0._Core;
 using MyFolder._1._Scripts._0._Object._00._Actor._1._Interfaces;
-using MyFolder._1._Scripts._0._Object._00._Actor._4._Components.Movement;
+using MyFolder._1._Scripts._0._Object._00._Actor._4._Components._2._Movement;
 using UnityEngine;
 using UnityEngine.AI;
 
